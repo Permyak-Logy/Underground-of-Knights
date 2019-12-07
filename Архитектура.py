@@ -8,8 +8,19 @@ class GameExample:
     Главный класс игры
     '''
     def __init__(self):
-        pass
-    
+        pygame.init()
+        self.size = self.width, self.height = 300, 300
+        self.main_screen = pygame.display.set_mode(self.size)
+        self.center()
+        self.running = True
+
+    def center(self):
+        """Центрирование как в QT"""
+        # qp = self.frameGeometry()
+        # cp = QDesktopWidget().availableGeometry().center()
+        # qp.moveCenter(cp)
+        # self.move(qp.topLeft())
+
     def checkEvents(self):
         pass
     
@@ -18,13 +29,24 @@ class GameExample:
     
     def keyPressEvent(self, event):
         pass
-    
+
     def mainloop(self):
-        # Тут будет произходить основной цикл программы
-        pass
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    self.mousePressEvent(event)
+                if event.type == pygame.KEYDOWN:
+                    self.keyPressEvent(event)
+
+            self.checkEvents()
+
+            pygame.display.flip()
+        self.close()
     
     def close(self):
-        pass
+        pygame.quit()
 
 
 class BoardLevel:
@@ -119,3 +141,8 @@ class Booster(Item):
     '''
     def __init__(self, game):
         pass
+
+
+if __name__ == '__main__':
+    ex = GameExample()
+    ex.mainloop()
