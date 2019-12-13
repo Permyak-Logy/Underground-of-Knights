@@ -1,9 +1,9 @@
-import pygame, os
-from win32api import GetSystemMetrics
-from random import randint, choice
+import pygame
+import os
 
 
-MODE_MENU, MODE_PLAY, MODE_PAUSE = 0, 1, 2
+MODE_MENU, MODE_PLAY, MODE_PAUSE, = 0, 1, 2
+DEBUG_INFO = True
 
 
 class GameExample:
@@ -13,16 +13,24 @@ class GameExample:
 
     def __init__(self):
         '''Инициализация'''
+        (print('init Game') if DEBUG_INFO else None)
         pygame.init()
 
         # Скрытие курсора
         pygame.mouse.set_visible(False)
 
-        # Инициализация параметров окна
-        self.size = self.width, self.height = 800, 500
+        # Инициализация размеров окна
+        n = 600
+        self.size = self.width, self.height = n * 2, n
 
         # Инициализация главного кадра игры
         self.main_screen = pygame.display.set_mode(self.size)
+
+        # Установка титульного имени окна
+        pygame.display.set_caption('Soul Knight Demo')
+
+        # Установка иконки
+        pygame.display.set_icon(self.load_image('icon.png'))
 
         # Загрузка меню
         self.load_menu()
@@ -38,40 +46,74 @@ class GameExample:
 
     def load_menu(self):
         '''Загруска меню'''
-
+        (print('\tinit menu:\n') if DEBUG_INFO else None)
         # Временное сокращение некоторых функций
         _Font = pygame.font.Font
+        _SysFont = pygame.font.SysFont
         _Color = pygame.Color
 
+        # fonts = ['consolas', 'cuprum', 'gabriola', ''] # Красивые шрифты
         # Пункты меню
-        puncts = [PushButton(text='Играть', pos=(10, 400), size=(150, 50), color=_Color('green'),
-                             font=_Font(None, 30), func=lambda: print('Играть')),
+        puncts = [Punct(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
+                        isfill=False, color_text=_Color('white'), number=0,
+                        font=_SysFont('gabriola', self.height // 10), bolden=False),
 
-                  PushButton(text='Настройки', pos=(210, 400), size=(150, 50), color=_Color('yellow'),
-                             font=_Font(None, 30), func=lambda: print('Настройки')),
+                  Punct(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
+                        isfill=False, color_text=_Color('green'), number=1,
+                        font=_SysFont('gabriola', self.height // 20), func=self.start_game),
 
-                  PushButton(text='Руководство', pos=(410, 400), size=(150, 50), color=_Color('#942ad4'),
-                             font=_Font(None, 30), func=lambda: print('Руководство')),
+                  Punct(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
+                        isfill=False, color_text=_Color('white'), number=2,
+                        font=_SysFont('gabriola', self.height // 20), func=self.open_settings),
 
-                  PushButton(text='Выйти', pos=(610, 400), size=(150, 50), color=_Color('red'),
-                             font=_Font(None, 30), func=lambda: print('Выход'))]
+                  Punct(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
+                        isfill=False, color_text=_Color('white'), number=3,
+                        font=_SysFont('gabriola', self.height // 20), func=self.open_guide),
+
+                  Punct(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
+                        isfill=False, color_text=_Color('red'), number=4,
+                        font=_SysFont('gabriola', self.height // 20), func=self.close)]
 
         # Создание меню с раннее созданными пунктами
         self.menu = Menu(self, puncts)
 
-    def mainloop(self):
-        ''' Главный цикл программы '''
+    def start_game(self):
+        '''Начать игру'''
+        (print('GameExample.start_game()') if DEBUG_INFO else None)
 
-        print('-----Game started------')
-        self.running = True
+    def open_settings(self):
+        '''Открывает настройки'''
+        (print('GameExample.open_settings()') if DEBUG_INFO else None)
+
+    def open_guide(self):
+        '''Открывает руководство'''
+        (print('GameExample.open_guide()') if DEBUG_INFO else None)
+
+    def start_screen_opening(self):
+        '''Зашрузочная заставка'''
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+
+            self.main_screen.fill(pygame.color.Color('black'))
+            pygame.display.flip()
+
+    def mainloop(self):
+        ''' Главный цикл программы '''
+        (print('\n-----Game started------') if DEBUG_INFO else None)
+
+        self.running = True
+        # self.start_screen_opening()
+        while self.running:
+            # Проверка событий
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    self.mousePressEvent(event)
+                    self.mouse_press_event(event)
                 if event.type == pygame.KEYDOWN:
-                    self.keyPressEvent(event)
+                    self.key_press_event(event)
 
             # Отрисовка экрана
             self.main_screen.fill(pygame.Color('black'))
@@ -88,16 +130,17 @@ class GameExample:
             pygame.display.flip()
 
         # Закрытие игры
-        self.close()
+        pygame.quit()
+        (print('-----Game finished------') if DEBUG_INFO else None)
 
-    def mousePressEvent(self, event):
+    def mouse_press_event(self, event):
         '''События мыши'''
         if self.mode == MODE_MENU:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # Проверяет элементы после нажатия мышкой
                 self.menu.checkOnPress(event.pos)
 
-    def keyPressEvent(self, event):
+    def key_press_event(self, event):
         '''События клавиатуры'''
         pass
 
@@ -125,61 +168,113 @@ class GameExample:
         # self.move(qp.topLeft())
 
     def close(self):
-        '''Выход из игры'''
-        pygame.quit()
-        print('-----Game closed------')
+        '''Выход из игры, и завершение главного цикла'''
+        (print('GameExample.close()') if DEBUG_INFO else None)
+        self.running = False
 
 
 class Menu:
-    def __init__(self, game, punkts=[]):
+    def __init__(self, game, punkts=None):
         self.game = game  # Подключение игры к меню
         background = self.game.load_image('background menu.jpg')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
-        self.punkts = punkts  # Занесение пунктов меню
+        self.punkts = punkts if punkts is not None else list()  # Занесение пунктов меню
 
     def checkOnPress(self, pos):
-        '''Проверяет меню после клика мышки''' # Не могу придумать...
+        '''Проверяет меню после клика мышки'''  # Не могу придумать...
         for punckt in self.punkts:
             punckt.on_click(pos)
 
-    def render(self, screen, num_punkt=-1):
+    def render(self, screen):
         '''Рисует меню'''
         screen.blit(self.image_background, (0, 0))  # Накладывет фон
         for punkt in self.punkts:
             # Рисует все пункты меню
-            punkt.draw(screen, ispressed=(punkt.number == num_punkt))
+            punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
 
 
-class PushButton:
+class Punct:
     '''
     Кнопки в меню игры
     '''
-    def __init__(self, text=None, pos=(0, 0), size=(30, 10), font=None, color=(255, 255, 255),
-                 color_active=(0, 255, 255), color_text=(0, 0, 0), image=None, func=None, number=0):
+
+    def __init__(self, text=None, pos=(0, 0), size=-1, font=None, color=(100, 100, 100), isfill=True,
+                 color_active=(0, 255, 255), color_text=(0, 0, 0), image=None, func=None, number=0, bolden=True):
         '''Инициализация'''
-        self.text = text  # Текст
-        self.font = (pygame.font.Font(None, size[0]) if font is None else font)  # Шрифт
-        self.pos = self.x, self.y = pos  # Позиция
-        self.size = self.width, self.height = size  # Размеры
-        self.number = number  # Порядковый номер пункта
+        (print(f'\t\tinit punct text: "{text}"", number: "{number}" : ', end='') if DEBUG_INFO else None)
+
+        self.text = text                                                            # Текст
+        self.font = (pygame.font.Font(None, size[0]) if font is None else font)     # Шрифт
+        self.pos = self.x, self.y = pos                                             # Позиция
+        self.number = number                                                        # Порядковый номер пункта
+
         # Цвет основной / активный / текста и картинка
         self.color, self.color_active, self.color_text = color, color_active, color_text
-        self.func = func  # Функция кнопки
-        # Картинка
-        self.image = pygame.transform.scale(image, self.size) if image is not None else None
+
+        self.func = func                                                                        # Функция кнопки
+        self.image = pygame.transform.scale(image, self.size) if image is not None else None    # Картика пункта
+        self.isfill = isfill                                                                    # Заливка
+        self.isshow = True                                                                      # Отображние
+        self.bolden = bolden                             # Флаг выделения при наведении курсора
+
+        if size == -1:  # Автоматическая генерация размера
+            (self.font.set_bold(True) if bolden else None)
+            size = self.font.size(self.text)
+            (self.font.set_bold(False) if bolden else None)
+
+        self.size = self.width, self.height = size          # Размеры
+
+        (print('True\n', end='') if DEBUG_INFO else None)
+
+    def show(self):
+        """Показать виджет"""
+        self.isshow = True
+
+    def hide(self):
+        """Скрыть виджет"""
+        self.isshow = False
+
+    def connect(self, func):
+        """Подключить функцию"""
+        self.func = func
 
     def draw(self, screen, ispressed=False):
         '''Рисует кнопку на screen'''
+        if not self.isshow:
+            # Не рисует если пункт скрыт
+            return
         surface = pygame.Surface(self.size)
-        surface.fill(self.color if not ispressed else self.color_active)
-        if self.image is not None:
+        if self.isfill:  # Заливка области
+            surface.fill(self.color if
+                         not ispressed or
+                         not self.bolden else
+                         self.color_active)
+        else:  # Преобразование в прозрачный фон
+            surface.fill((1, 0, 0))
+            surface.set_colorkey((1, 0, 0))
+            surface.convert_alpha()
+
+        if self.image is not None:  # наложение картинки если есть она
             surface.blit(self.image, self.pos)
-        if self.text is not None:
-            text = self.font.render(self.text, 1, self.color_text)
+
+        if self.text is not None:  # Наложение текста если он есть
+            if not ispressed or not self.bolden:
+                # Создание surface текста
+                text = self.font.render(self.text, 1, self.color_text)
+            else:
+                # Создание surface выделенного текста
+                self.font.set_bold(True)
+                text = self.font.render(self.text, 1, self.color_text)
+                self.font.set_bold(False)
+
+            # Вычесление центра текста
             text_x = self.width // 2 - text.get_width() // 2
             text_y = self.height // 2 - text.get_height() // 2
+
+            # Наложение текста
             surface.blit(text, (text_x, text_y))
 
+        # Наложение получившегося изображения punct на screen
         screen.blit(surface, self.pos)
 
     def get_focused(self, pos):
