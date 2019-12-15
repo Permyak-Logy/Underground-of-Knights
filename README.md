@@ -1,3 +1,3 @@
 # PyGameProject
 
-Проект по библиотеке PyGame для Yandex Lyceum
+Проект по библиотеке PyGame
