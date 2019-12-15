@@ -2,7 +2,7 @@ import pygame
 import os
 
 
-MODE_MENU, MODE_PLAY, MODE_PAUSE, = 0, 1, 2
+MODE_MENU, MODE_GAME, MODE_PAUSE, = 0, 1, 2
 DEBUG_INFO = True
 
 
@@ -37,7 +37,6 @@ class GameExample:
 
         # Некоторые переменныне в игре
         self.mode = MODE_MENU  # Переключатель между режимом меню MODE_MENU / в игре MODE_GAME / в паузе MODE_PAUSE
-        self.battle_status = False  # Переключатель между режимом битвы (True) и мира (False)
         self.running = False  # Активнойсть программы
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
 
@@ -80,6 +79,8 @@ class GameExample:
     def start_game(self):
         '''Начать игру'''
         (print('GameExample.start_game()') if DEBUG_INFO else None)
+        self.mode = MODE_GAME
+
 
     def open_settings(self):
         '''Открывает настройки'''
@@ -120,7 +121,7 @@ class GameExample:
             if self.mode == MODE_MENU:
                 # Рисование меню
                 self.menu.render(self.main_screen)
-            if self.mode == MODE_PLAY:
+            if self.mode == MODE_GAME:
                 pass
             if pygame.mouse.get_focused():
                 # Отрисовка курсора
@@ -292,6 +293,62 @@ class Punct:
         if not self.get_focused(pos):
             return
         self.func()
+
+
+class GameSpace:
+    def __init__(self, game, punkts=None):
+        self.game = game
+        self.punkts = punkts if punkts is not None else list()
+        self.levels = []
+        self.current_level_index = 0
+
+    def check_on_press_punkts(self, pos):
+        for punkt in self.punkts:
+            punkt.on_click(pos)
+
+    def render(self, screen):
+        pass
+
+    def update(self):
+        pass
+
+    def add_level(self):
+        pass
+
+    def start_random_generation(self, lvl_count=5):
+        pass
+
+
+class Level:
+    def __init__(self, gamespace):
+        self.game_space = gamespace
+
+    def render(self, screen):
+        pass
+
+    def add_sector(self):
+        pass
+
+    def start_random_generation(self, sector_count=5):
+        pass
+
+
+class Sector:
+    '''
+    Класс комнаты или сектора в игре
+    '''
+
+    def __init__(self, level, mode):
+        pass
+
+    def render(self, screen):
+        pass
+
+    def add_object(self, obj):
+        pass
+
+    def start_random_generation(self, enemy_count=8):
+        pass
 
 
 if __name__ == '__main__':
