@@ -1,7 +1,7 @@
-import pygame, os, levels
+import pygame, os, sys
 
 
-MODE_MENU, MODE_GAME, MODE_PAUSE = 0, 1, 2
+MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
 
 
@@ -38,8 +38,7 @@ class GameExample:
         self.load_game_space()
 
         # Некоторые переменныне в игре
-        self.mode = MODE_MENU  # Переключатель между режимом меню MODE_MENU / в игре MODE_GAME / в паузе MODE_PAUSE
-        self.running = False  # Активнойсть программы
+        self.mode = MODE_MENU  # Переключатель между режимами меню MODE_MENU / игра MODE_GAME / настройки MODE_SETTINGS
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
 
         # Центрирование окна
@@ -47,15 +46,14 @@ class GameExample:
 
     def mainloop(self):
         ''' Главный цикл программы '''
-        (print('\n-----Game started------') if DEBUG_INFO else None)
+        print('\n-----Game started------') if DEBUG_INFO else None
 
-        self.running = True
         # self.start_screen_opening()
-        while self.running:
+        while True:
             # Проверка событий
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
+                    self.terminate()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.mouse_press_event(event)
                 if event.type == pygame.KEYDOWN:
@@ -67,6 +65,7 @@ class GameExample:
                 # Рисование меню
                 self.menu.render(self.main_screen)
             if self.mode == MODE_GAME:
+                self.game_space.update()
                 # Рисование ирового пространства
                 self.game_space.render(self.main_screen)
             if pygame.mouse.get_focused():
@@ -76,10 +75,6 @@ class GameExample:
             # Обновление дисплея
             pygame.display.flip()
 
-        # Закрытие игры
-        pygame.quit()
-        (print('-----Game finished------') if DEBUG_INFO else None)
-    
     def load_image(self, name, colorkey=None):
         """
         Возвращает картинку с именем name. Если есть colorkey, то у картинки делается фон прозрачным.
@@ -98,7 +93,7 @@ class GameExample:
     
     def load_menu(self):
         '''Загруска меню'''
-        (print('\tinit menu:\n') if DEBUG_INFO else None)
+        print('\tinit menu:\n') if DEBUG_INFO else None
         # Сокращение некоторых функций
         _Font = pygame.font.Font
         _SysFont = pygame.font.SysFont
@@ -124,14 +119,14 @@ class GameExample:
 
                   Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
                         isfill=False, color_text=_Color('red'), number=4,
-                        font=_SysFont('gabriola', self.height // 20), func=self.close)]
+                        font=_SysFont('gabriola', self.height // 20), func=self.terminate)]
 
         # Создание меню с раннее созданными пунктами
         self.menu = Menu(self, punkts)
     
     def load_game_space(self):
         '''Загрузка ирового пространства'''
-        (print('\tinit game space:\n') if DEBUG_INFO else None)
+        print('\tinit game space:\n') if DEBUG_INFO else None
         # Сокращение некоторых функций
         _Font = pygame.font.Font
         _SysFont = pygame.font.SysFont
@@ -168,41 +163,42 @@ class GameExample:
     
     def start_game(self):
         '''Начать игру'''
-        (print('GameExample.start_game()') if DEBUG_INFO else None)
+        print('GameExample.start_game()') if DEBUG_INFO else None
         self.mode = MODE_GAME
         self.game_space.new_game()
-        self.game_space.load_levels('std')
         self.unset_pause()
     
     def open_menu(self):
         '''Открывает меню'''
-        (print('GameExample.open_menu()') if DEBUG_INFO else None)
+        print('GameExample.open_menu()') if DEBUG_INFO else None
         self.mode = MODE_MENU
         self.set_pause()
 
     def open_settings(self):
         '''Открывает настройки'''
-        (print('GameExample.open_settings()') if DEBUG_INFO else None)
+        print('GameExample.open_settings()') if DEBUG_INFO else None
 
     def open_guide(self):
         '''Открывает руководство'''
-        (print('GameExample.open_guide()') if DEBUG_INFO else None)
+        print('GameExample.open_guide()') if DEBUG_INFO else None
     
     def set_pause(self):
-        (print('GameExample.set_pause()') if DEBUG_INFO else None)
+        print('GameExample.set_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = True
+        self.game_space.get_punkt(5).hide()
         self.game_space.get_punkt(6).hide()
         self.game_space.get_punkt(7).show()
     
     def unset_pause(self):
-        (print('GameExample.unset_pause()') if DEBUG_INFO else None)
+        print('GameExample.unset_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = False
+        self.game_space.get_punkt(5).show()
         self.game_space.get_punkt(6).show()
         self.game_space.get_punkt(7).hide()        
     
     def start_screen_opening(self):
         '''Зашрузочная заставка'''
-        (print('GameExample.start_screen_opening()') if DEBUG_INFO else None)
+        print('GameExample.start_screen_opening()') if DEBUG_INFO else None
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -213,16 +209,18 @@ class GameExample:
     
     def center(self):
         """Центрирование как в QT"""
-        (print('GameExample.center()') if DEBUG_INFO else None)        
+        print('GameExample.center()') if DEBUG_INFO else None
         # qp = self.frameGeometry()
         # cp = QDesktopWidget().availableGeometry().center()
         # qp.moveCenter(cp)
         # self.move(qp.topLeft())
 
-    def close(self):
+    def terminate(self):
         '''Выход из игры, и завершение главного цикла'''
-        (print('GameExample.close()') if DEBUG_INFO else None)
-        self.running = False
+        print('GameExample.close()') if DEBUG_INFO else None
+        pygame.quit()
+        print('-----Game closed-----')
+        sys.exit()
 
 
 class Menu:
@@ -264,16 +262,29 @@ class GameSpace:
         self.game = game                                        # Подключение игры
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
         self.levels = []                                        # Список уровней
-        self.current_level_index = None                         # Индекс текущего уровня
-        
+        self.level_x = self.level_y = 0
         self.pause_status = False
-        
-        # self.player = Player()
+
+        # self.images = {'player': game.load_image('player'),
+        #                'wall': self.game.load_image('wall.png'),
+        #                'empty': game.load_image('grass.png')}
+
+        self.all_sprites = pygame.sprite.Group()    # Все спрайты
+        self.walls_group = pygame.sprite.Group()    # Спрайты стен
+        self.items_group = pygame.sprite.Group()    # Спрайты вещей
+        self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
+        self.player_group = pygame.sprite.Group()   # Спрайт игрока
+
+        # self.player = Player(self)                            # Создание игрока
+        # self.camera = Camera(self)
     
     def render(self, screen):
         '''Рисует игровое пространство'''
-        # level = self.levels[self.current_level_index]
-        # level.render(screen)  # Рисует активный уровень в игре
+        self.walls_group.draw(screen)
+        self.items_group.draw(screen)
+        self.player_group.draw(screen)
+        self.enemies_group.draw(screen)
+
         for punkt in self.punkts:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
     
@@ -285,44 +296,94 @@ class GameSpace:
     
     def new_game(self):
         '''Сбрасывает предыдущий прогресс и данные'''
+        print('GameSpace.new_game()')
         self.levels.clear()
-        self.current_level_index = None
-    
-    def load_levels(self, name):
-        '''Загрузка заранье готовых уровней с именем name из файла levels.py'''
-        self.levels, self.current_level_index = levels.get(name)
-    
+        self.load_levels('test')
+        self.level_x, level_y = self.generate_level(self.get_next_level())
+
+    def get_next_level(self):
+        try:
+            return self.levels.pop(0)
+        except IndexError:
+            return None
+
+    def finish_game(self, message=None):
+        '''Заканчивает игру'''
+        print('Game.Space.finish_game()') if DEBUG_INFO else None
+        self.game.set_pause()
+        # Что то надо туть сделать
+
+
+    def update(self):
+        '''Обновляет данные игры'''
+        if self.pause_status is True:
+            return
+        # camera.update(self.player)
+        # for sprite in self.all_sprites:
+        #     camera.apply(sprite)
+
+        # и другие действия
+
+    def generate_level(self, level):
+        print('\tStart generate level') if DEBUG_INFO else None
+        if level is None:
+            self.finish_game('Уровни кончились!!!')
+        self.empty_sprites()
+        for y in range(len(level)):
+            for x in range(len(level[y])):
+                obj = level[y][x]
+                if obj == '.':
+                    # Tile(self.images['empty'], x, y)
+                    pass
+                if obj == '#':
+                    # Wall(self.images['wall'], x, y)
+                    pass
+                if obj == '@':
+                    # Tile(self.images['empty'], x, y)
+                    # self.player.set_pos(x, y)
+                    pass
+        print('\tFinish generate level')
+        return x, y
+
+
+    def load_levels(self, directory):
+        '''Загрузка пакета уровней'''
+        print('GameSpace.load_levels()') if DEBUG_INFO else None
+        try:
+            print(f'\tStart load levels {directory}') if DEBUG_INFO else None
+            self.levels.clear()
+            for i in range(1, 10**10):
+                print(f'\t\t--- connect level lvl_{i} ', end='') if DEBUG_INFO else None
+                filename = f"data/levels/{directory}/lvl_{i}.txt"
+                # читаем уровень, убирая символы перевода строки
+                with open(filename, 'r') as mapFile:
+                    level_map = [line.strip() for line in mapFile]
+
+                # и подсчитываем максимальную длину
+                max_width = max(map(len, level_map))
+
+                # дополняем каждую строку пустыми клетками ('.')
+                self.levels.append(list(map(lambda x: x.ljust(max_width, '.'), level_map)))
+                print('True') if DEBUG_INFO else None
+
+        except FileNotFoundError:
+            print('False') if DEBUG_INFO else None
+            print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
+
+    def empty_sprites(self):
+        print('GameSpace.empty_sprites()') if DEBUG_INFO else None
+        self.all_sprites.empty()
+        self.walls_group.empty()
+        self.items_group.empty()
+        self.enemies_group.empty()
+        self.enemies_group.empty()
+        self.player_group.empty()
+
     def get_punkt(self, number):
         '''Возвращает пункт по заданному номеру'''
         for punkt in self.punkts:
             if punkt.number == number:
                 return punkt
-        
-    def update(self):  # Заглушено
-        '''Обновляет данные игры'''
-        if True:
-            return
-        level = self.levels[self.current_level_index]
-    
-    def add_level(self, level=None):  # Заглушено
-        '''Добавляет новый уровень'''
-        if True:
-            return
-        if level is None:
-            self.levels.append(Level(self))
-        else:
-            self.levels.append(level)
-    
-    def next_level(self):  # Заглушено
-        '''Переход к следующему уровню'''
-        if True:
-            return
-        if self.current_level_index is None:
-            self.current_level_index = 0
-        else:
-            self.current_level_index += 1
-        if len(self.levels) - 1 < self.current_level_index:
-            self.finish_game()
 
 
 class Punkt:
@@ -333,7 +394,7 @@ class Punkt:
     def __init__(self, text=None, pos=(0, 0), size=-1, font=None, color=(100, 100, 100), isfill=True,
                  color_active=(0, 255, 255), color_text=(0, 0, 0), image=None, func=None, number=0, bolden=True):
         '''Инициализация'''
-        (print(f'\t\tinit punct text: "{text}"", number: "{number}" : ', end='') if DEBUG_INFO else None)
+        print(f'\t\tinit punct text: "{text}"", number: "{number}" : ', end='') if DEBUG_INFO else None
 
         self.set_text(text)                                 # Установка текста
         self.set_font(font)                                 # Установка шрифта
@@ -350,7 +411,7 @@ class Punkt:
         self.move(*pos)
         self.number = number
         
-        (print('True\n', end='') if DEBUG_INFO else None)
+        print('True\n', end='') if DEBUG_INFO else None
     
     def set_text(self, text):
         '''Устанавливает текст'''
@@ -382,9 +443,9 @@ class Punkt:
         self.size = self.width, self.height = size
         
     def get_size_text(self):
-        (self.font.set_bold(True) if self.bolden else None)
+        self.font.set_bold(True) if self.bolden else None
         size = self.font.size(self.text)
-        (self.font.set_bold(False) if self.bolden else None)
+        self.font.set_bold(False) if self.bolden else None
         return size
     
     def show(self):
