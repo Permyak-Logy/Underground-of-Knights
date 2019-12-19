@@ -1,6 +1,5 @@
 import pygame, os, sys
 
-
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
 
@@ -33,7 +32,7 @@ class GameExample:
 
         # Загрузка меню
         self.load_menu()
-        
+
         # Загруска игрового пространства
         self.load_game_space()
 
@@ -90,7 +89,7 @@ class GameExample:
         else:
             image = image.convert_alpha()
         return image
-    
+
     def load_menu(self):
         '''Загруска меню'''
         print('\tinit menu:\n') if DEBUG_INFO else None
@@ -123,7 +122,7 @@ class GameExample:
 
         # Создание меню с раннее созданными пунктами
         self.menu = Menu(self, punkts)
-    
+
     def load_game_space(self):
         '''Загрузка ирового пространства'''
         print('\tinit game space:\n') if DEBUG_INFO else None
@@ -131,43 +130,43 @@ class GameExample:
         _Font = pygame.font.Font
         _SysFont = pygame.font.SysFont
         _Color = pygame.Color
-        
+
         punkts = [Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
                         isfill=False, color_text=_Color('yellow'), number=5,
                         font=_SysFont('gabriola', self.height // 20), func=self.open_menu),
                   Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
                         isfill=False, color_text=_Color('yellow'), number=6,
                         font=_SysFont('gabriola', self.height // 20), func=self.set_pause),
-                  
+
                   Punkt(text='PAUSE', pos=(0, 0), size=self.size,
                         isfill=False, color_text=_Color('blue'), number=7, bolden=False,
                         font=_SysFont(None, self.height // 2), func=self.unset_pause)]
-        
+
         self.game_space = GameSpace(self, punkts)
-        
+
         self.game_space.get_punkt(7).hide()
-    
+
     def mouse_press_event(self, event):
         '''События мыши'''
         if self.mode == MODE_MENU:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # Проверяет элементы после нажатия мышкой
                 self.menu.check_on_press_punkts(event.pos)
-        
+
         if self.mode == MODE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.game_space.check_on_press_punkts(event.pos)
-        
+
     def key_press_event(self, event):
         '''События клавиатуры'''
-    
+
     def start_game(self):
         '''Начать игру'''
         print('GameExample.start_game()') if DEBUG_INFO else None
         self.mode = MODE_GAME
         self.game_space.new_game()
         self.unset_pause()
-    
+
     def open_menu(self):
         '''Открывает меню'''
         print('GameExample.open_menu()') if DEBUG_INFO else None
@@ -181,21 +180,21 @@ class GameExample:
     def open_guide(self):
         '''Открывает руководство'''
         print('GameExample.open_guide()') if DEBUG_INFO else None
-    
+
     def set_pause(self):
         print('GameExample.set_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = True
         self.game_space.get_punkt(5).hide()
         self.game_space.get_punkt(6).hide()
         self.game_space.get_punkt(7).show()
-    
+
     def unset_pause(self):
         print('GameExample.unset_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = False
         self.game_space.get_punkt(5).show()
         self.game_space.get_punkt(6).show()
-        self.game_space.get_punkt(7).hide()        
-    
+        self.game_space.get_punkt(7).hide()
+
     def start_screen_opening(self):
         '''Зашрузочная заставка'''
         print('GameExample.start_screen_opening()') if DEBUG_INFO else None
@@ -206,7 +205,7 @@ class GameExample:
 
             self.main_screen.fill(pygame.color.Color('black'))
             pygame.display.flip()
-    
+
     def center(self):
         """Центрирование как в QT"""
         print('GameExample.center()') if DEBUG_INFO else None
@@ -227,12 +226,12 @@ class Menu:
     '''
     Меню игры
     '''
-    
+
     def __init__(self, game, punkts=None):
-        self.game = game                                                            # Подключение игры
-        background = self.game.load_image('background menu.jpg')                    # Загрузка картинки фона
+        self.game = game  # Подключение игры
+        background = self.game.load_image('background menu.jpg')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
-        self.punkts = punkts if punkts is not None else list()                      # Занесение пунктов
+        self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
 
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатие'''  # Не могу придумать...
@@ -245,23 +244,23 @@ class Menu:
         for punkt in self.punkts:
             # Рисует все пункты меню
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
-    
+
     def get_punkt(self, number):
         '''Возвращает пункт по заданному номеру'''
         for punkt in self.punkts:
             if punkt.number == number:
-                return punkt    
+                return punkt
 
 
 class GameSpace:
     '''
     Игровое пространство
     '''
-    
+
     def __init__(self, game, punkts=None):
-        self.game = game                                        # Подключение игры
+        self.game = game  # Подключение игры
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
-        self.levels = []                                        # Список уровней
+        self.levels = []  # Список уровней
         self.level_x = self.level_y = 0
         self.pause_status = False
 
@@ -269,15 +268,15 @@ class GameSpace:
         #                'wall': self.game.load_image('wall.png'),
         #                'empty': game.load_image('grass.png')}
 
-        self.all_sprites = pygame.sprite.Group()    # Все спрайты
-        self.walls_group = pygame.sprite.Group()    # Спрайты стен
-        self.items_group = pygame.sprite.Group()    # Спрайты вещей
+        self.all_sprites = pygame.sprite.Group()  # Все спрайты
+        self.walls_group = pygame.sprite.Group()  # Спрайты стен
+        self.items_group = pygame.sprite.Group()  # Спрайты вещей
         self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
-        self.player_group = pygame.sprite.Group()   # Спрайт игрока
+        self.player_group = pygame.sprite.Group()  # Спрайт игрока
 
         # self.player = Player(self)                            # Создание игрока
         # self.camera = Camera(self)
-    
+
     def render(self, screen):
         '''Рисует игровое пространство'''
         self.walls_group.draw(screen)
@@ -287,13 +286,13 @@ class GameSpace:
 
         for punkt in self.punkts:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
-    
+
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатиe'''
         for punkt in self.punkts:
             if punkt.on_click(pos):
                 break
-    
+
     def new_game(self):
         '''Сбрасывает предыдущий прогресс и данные'''
         print('GameSpace.new_game()')
@@ -312,7 +311,6 @@ class GameSpace:
         print('Game.Space.finish_game()') if DEBUG_INFO else None
         self.game.set_pause()
         # Что то надо туть сделать
-
 
     def update(self):
         '''Обновляет данные игры'''
@@ -345,14 +343,13 @@ class GameSpace:
         print('\tFinish generate level')
         return x, y
 
-
     def load_levels(self, directory):
         '''Загрузка пакета уровней'''
         print('GameSpace.load_levels()') if DEBUG_INFO else None
         try:
             print(f'\tStart load levels {directory}') if DEBUG_INFO else None
             self.levels.clear()
-            for i in range(1, 10**10):
+            for i in range(1, 10 ** 10):
                 print(f'\t\t--- connect level lvl_{i} ', end='') if DEBUG_INFO else None
                 filename = f"data/levels/{directory}/lvl_{i}.txt"
                 # читаем уровень, убирая символы перевода строки
@@ -396,35 +393,35 @@ class Punkt:
         '''Инициализация'''
         print(f'\t\tinit punct text: "{text}"", number: "{number}" : ', end='') if DEBUG_INFO else None
 
-        self.set_text(text)                                 # Установка текста
-        self.set_font(font)                                 # Установка шрифта
-        self.connect(func)                                  # Подключение функции
-        self.set_image(image)                               # Установка картинки
-        self.show()                                         # Отображение
-        self.set_color(color, color_active, color_text)     # Установка цветов элементов
-        self.isfill = isfill                                # Заливка
-        self.bolden = bolden                                # Флаг выделения при наведении курсора
-        if size == -1:                                      # Автоматическая генерация размера
+        self.set_text(text)  # Установка текста
+        self.set_font(font)  # Установка шрифта
+        self.connect(func)  # Подключение функции
+        self.set_image(image)  # Установка картинки
+        self.show()  # Отображение
+        self.set_color(color, color_active, color_text)  # Установка цветов элементов
+        self.isfill = isfill  # Заливка
+        self.bolden = bolden  # Флаг выделения при наведении курсора
+        if size == -1:  # Автоматическая генерация размера
             self.resize(self.get_size_text())
         else:
             self.resize(size)
         self.move(*pos)
         self.number = number
-        
+
         print('True\n', end='') if DEBUG_INFO else None
-    
+
     def set_text(self, text):
         '''Устанавливает текст'''
         self.text = text
-    
+
     def set_font(self, font):
         '''Устанавливает шрифт'''
         self.font = pygame.font.Font(None, size[0]) if font is None else font
-    
+
     def set_image(self, image):
         '''Устанавливает картинку'''
         self.image = pygame.transform.scale(image, self.size) if image is not None else None
-        
+
     def set_color(self, color=None, color_active=None, color_text=None):
         '''Устанавливает цвета элементов'''
         if color is not None:
@@ -433,21 +430,21 @@ class Punkt:
             self.color_active = color_active
         if color_text is not None:
             self.color_text = color_text
-    
+
     def move(self, x, y):
         '''Устанавливает координаты пункта'''
         self.pos = self.x, self.y = x, y
-    
+
     def resize(self, size):
         '''Меняет размеры'''
         self.size = self.width, self.height = size
-        
+
     def get_size_text(self):
         self.font.set_bold(True) if self.bolden else None
         size = self.font.size(self.text)
         self.font.set_bold(False) if self.bolden else None
         return size
-    
+
     def show(self):
         """Показать виджет"""
         self.isshowed = True
