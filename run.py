@@ -1,4 +1,5 @@
 import pygame, os, sys
+from random import randrange
 
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
@@ -331,13 +332,13 @@ class GameSpace:
             for x in range(len(level[y])):
                 obj = level[y][x]
                 if obj == '.':
-                    # Tile(self.images['empty'], x, y)
+                    # Tile(self, x, y)
                     pass
                 if obj == '#':
-                    # Wall(self.images['wall'], x, y)
+                    # Wall(self, x, y)
                     pass
                 if obj == '@':
-                    # Tile(self.images['empty'], x, y)
+                    # Tile(self, x, y)
                     # self.player.set_pos(x, y)
                     pass
         print('\tFinish generate level')
@@ -354,18 +355,19 @@ class GameSpace:
                 filename = f"data/levels/{directory}/lvl_{i}.txt"
                 # читаем уровень, убирая символы перевода строки
                 with open(filename, 'r') as mapFile:
-                    level_map = [line.strip() for line in mapFile]
+                    level_map = [line.strip().split() for line in mapFile]
 
                 # и подсчитываем максимальную длину
                 max_width = max(map(len, level_map))
 
                 # дополняем каждую строку пустыми клетками ('.')
-                self.levels.append(list(map(lambda x: x.ljust(max_width, '.'), level_map)))
+                self.levels.append(list(map(lambda x: x + ['_'] * (max_width - len(x)), level_map)))
                 print('True') if DEBUG_INFO else None
 
         except FileNotFoundError:
             print('False') if DEBUG_INFO else None
             print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
+            [print([print(row) for row in level]) for level in self.levels]
 
     def empty_sprites(self):
         print('GameSpace.empty_sprites()') if DEBUG_INFO else None
