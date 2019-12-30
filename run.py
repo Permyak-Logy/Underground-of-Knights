@@ -308,7 +308,7 @@ class GameSpace:
 
         self.levels.clear()
         self.load_levels('test')
-        # self.player = Player(self, 0, 0)
+        self.player = Player(self, 0, 0)
         self.level_x, level_y = self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
@@ -351,9 +351,9 @@ class GameSpace:
                     pass
                 if obj == '@':
                     # Tile(self, x, y)
-                    # self.player.set_pos(x, y)
-                    # self.player.add(self.player_group)
-                    pass
+                    self.player.set_pos(x, y)
+                    self.player.add(self.player_group)
+
         print('\tFinish generate level')
         return x, y
 
@@ -529,6 +529,68 @@ class Punkt:
             return False
         self.func()
         return True
+
+
+class BaseHero(pygame.sprite.Sprite):
+    def __init__(self, space, x, y, *groups, image=None, speed_move=0):
+        super().__init__(*groups)
+        self.gamespace = space
+        if image is None:
+            self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
+            self.image.fill(pygame.color.Color('purple'))
+        else:
+            self.image = image
+
+        self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
+        self.rect = self.image.get_rect().move(self.true_x, self.true_y)
+        self.speed_move = speed_move
+
+        self.mask = pygame.mask.from_surface(self.image)
+
+    def set_pos(self, x, y):
+        self.rect.x, self.rect.y = self.true_x, self.true_y = self.gamespace.size_cell * x, self.gamespace.size_cell * y
+
+
+class Player(BaseHero):
+    '''
+    Класс игрока
+    '''
+    def __init__(self, space, x, y):
+        image = pygame.transform.scale(space.game.load_image('player.png'), (space.size_cell, space.size_cell))
+        super().__init__(space, x, y, space.all_sprites, image=image, speed_move=space.size_cell * 3)
+
+        print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
+
+    def update(self, *args):
+        pressed_keys = pygame.key.get_pressed()
+
+        if pressed_keys[pygame.K_RIGHT]:
+            self.true_x += args[0] * self.speed_move / 1000
+            self.rect.x = int(self.true_x)
+            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+            if sprite_list:
+                self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
+
+        if pressed_keys[pygame.K_LEFT]:
+            self.true_x -= args[0] * self.speed_move / 1000
+            self.rect.x = int(self.true_x)
+            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+            if sprite_list:
+                self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
+
+        if pressed_keys[pygame.K_UP]:
+            self.true_y -= args[0] * self.speed_move / 1000
+            self.rect.y = int(self.true_y)
+            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+            if sprite_list:
+                self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
+
+        if pressed_keys[pygame.K_DOWN]:
+            self.true_y += args[0] * self.speed_move / 1000
+            self.rect.y = int(self.true_y)
+            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+            if sprite_list:
+                self.rect.y = self.true_y = sprite_list[0].rect.y - self.rect.size[1]
 
 
 if __name__ == '__main__':
