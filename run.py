@@ -168,14 +168,6 @@ class GameExample:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
                 self.open_menu()
-            # elif event.key == pygame.K_UP:
-            #     self.game_space.player.move((0, -1))
-            # elif event.key == pygame.K_DOWN:
-            #     self.game_space.player.move((0, 1))
-            # elif event.key == pygame.K_RIGHT:
-            #     self.game_space.player.move((1, 0))
-            # elif event.key == pygame.K_LEFT:
-            #     self.game_space.player.move((-1, 0))
 
 
     def start_game(self):
@@ -316,7 +308,7 @@ class GameSpace:
 
         self.levels.clear()
         self.load_levels('test')
-        self.player = Player(self, 0, 0)
+        # self.player = Player(self, 0, 0)
         self.level_x, level_y = self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
@@ -355,12 +347,13 @@ class GameSpace:
                     # Tile(self, x, y)
                     pass
                 if obj == '#':
-                    Wall(self, x, y)
+                    # Wall(self, x, y)
                     pass
                 if obj == '@':
                     # Tile(self, x, y)
-                    self.player.set_pos(x, y)
-                    self.player.add(self.player_group)
+                    # self.player.set_pos(x, y)
+                    # self.player.add(self.player_group)
+                    pass
         print('\tFinish generate level')
         return x, y
 
@@ -536,66 +529,6 @@ class Punkt:
             return False
         self.func()
         return True
-
-
-class BaseObject(pygame.sprite.Sprite):
-    def __init__(self, space, x, y, *groups, image=None):
-        super().__init__(*groups)
-        self.gamespace = space
-        if image is None:
-            self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
-            self.image.fill(pygame.color.Color('purple'))
-        else:
-            self.image = image
-
-        self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
-        self.rect = self.image.get_rect().move(self.true_x, self.true_y)
-
-        self.mask = pygame.mask.from_surface(self.image)
-        # print('BaseObject create True') if DEBUG_INFO else None
-
-    def set_pos(self, x, y):
-        self.rect.x, self.rect.y = self.true_x, self.true_y = self.gamespace.size_cell * x, self.gamespace.size_cell * y
-
-
-class Player(BaseObject):
-    def __init__(self, space, x, y):
-        image = pygame.transform.scale(space.game.load_image('player.png', colorkey=-1), (space.size_cell, space.size_cell))
-        super().__init__(space, x, y, space.all_sprites, image=image)
-        self.speed_move = space.size_cell * 3
-
-        print(self.true_x, self.true_y)
-        print('Player create True') if DEBUG_INFO else None
-
-    def move(self, direction):
-        self.rect.x += direction[0] * self.speed_move
-        self.rect.y += direction[1] * self.speed_move
-
-    def update(self, *args):
-        pressed_keys = pygame.key.get_pressed()
-        if pressed_keys[pygame.K_RIGHT]:
-            self.true_x += args[0] * self.speed_move / 1000
-            self.rect.x = int(self.true_x)
-
-        if pressed_keys[pygame.K_LEFT]:
-            self.true_x -= args[0] * self.speed_move / 1000
-            self.rect.x = int(self.true_x)
-
-        if pressed_keys[pygame.K_UP]:
-            self.true_y -= args[0] * self.speed_move / 1000
-            self.rect.y = int(self.true_y)
-
-        if pressed_keys[pygame.K_DOWN]:
-            self.true_y += args[0] * self.speed_move / 1000
-            self.rect.y = int(self.true_y)
-
-
-class Wall(BaseObject):
-    def __init__(self, space, x, y):
-        image = pygame.Surface(size=(space.size_cell, space.size_cell))
-        image.fill(pygame.color.Color('gray'))
-        super().__init__(space, x, y, space.all_sprites, space.walls_group, image=image)
-        print('Wall create True') if DEBUG_INFO else None
 
 
 if __name__ == '__main__':
