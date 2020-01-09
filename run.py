@@ -532,7 +532,7 @@ class Punkt:
 
 
 class BaseHero(pygame.sprite.Sprite):
-    def __init__(self, space, x, y, *groups, image=None, speed_move=0):
+    def __init__(self, space, x, y, *groups, image=None):
         super().__init__(*groups)
         self.gamespace = space
         if image is None:
@@ -543,12 +543,75 @@ class BaseHero(pygame.sprite.Sprite):
 
         self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
-        self.speed_move = speed_move
 
         self.mask = pygame.mask.from_surface(self.image)
 
-    def set_pos(self, x, y):
-        self.rect.x, self.rect.y = self.true_x, self.true_y = self.gamespace.size_cell * x, self.gamespace.size_cell * y
+        self.things = {'cur_weapon': None, 'second_weapon': None,
+                       'helmet': None, 'vest': None, 'boots': None,
+                       'amulet': None}
+        self._armor = 0  # Броня
+        self.health = 100  # Здоровье
+        self._sprint_speed = 2  # Скорость спринта
+        self.shields = 100  # Щиты
+        self.energy = 100  # Энергия
+        self._strength = 1  # Сила
+        self._radius = 1  # Радиус
+        self._energy_efficiency = 1  # Энергоэфективность
+        self._duration = 1  # Длительность
+
+    def set_pos(self, x, y):  # Установка позиции
+        self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
+                                                               self.gamespace.size_cell * y)
+
+    def half_damage(self, damage):  # Получение урона
+        damage *= (self.armor() / (self.armor() + 300))  # Истинный полученный урон
+        if self.shields - damage < 0:
+            damage -= self.shields
+            self.shields = 0
+            self.health -= damage
+        else:
+            self.shields -= damage
+
+    def change_weapons(self):  # Смена оружия
+        self.things['cur_weapon'], self.things['second_weapon'] = (self.things['second_weapon'],
+                                                                   self.things['cur_weapon'])
+
+    def put_thing(self, thing):
+        if thing.type == 'weapon':
+            if self.things['cur_weapon'] is None:
+                self.things['cur_weapon'] = thing
+            elif self.things['second_weapon'] is None:
+                self.things['second_weapon'] = thing
+            else:
+                self.things['cur_weapon'] = thing
+        self.things[thing.type] = thing
+
+    def armor(self):  # Кол-во брони  броня
+        return sum(map(lambda key: self.things[key].armor if self.things.get(key) else 0,
+                       self.things.keys())) + self._armor
+
+    def sprint_speed(self):  # Скорость спринта
+        return sum(map(lambda key: self.things[key].speed if self.things.get(key) else 0,
+                       self.things.keys())) + self._sprint_speed
+
+    def strength(self):  # Сила
+        return sum(map(lambda key: self.things[key].strength if self.things.get(key) else 0,
+                       self.things.keys())) + self._strength
+
+    def radius(self):  # Радиус
+        return sum(map(lambda key: self.things[key].radius if self.things.get(key) else 0,
+                       self.things.keys())) + self._radius
+
+    def energy_efficiency(self):  # Энергоэфективность
+        return sum(map(lambda key: self.things[key].energy_efficiency if self.things.get(key) else 0,
+                       self.things.keys())) + self._energy_efficiency
+
+    def duration(self):  # Длительность
+        return sum(map(lambda key: self.things[key].duration if self.things.get(key) else 0,
+                       self.things.keys())) + self._duration
+
+    def get_moving(self, tick):
+        return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
 
 
 class Player(BaseHero):
@@ -557,36 +620,46 @@ class Player(BaseHero):
     '''
     def __init__(self, space, x, y):
         image = pygame.transform.scale(space.game.load_image('player.png'), (space.size_cell, space.size_cell))
-        super().__init__(space, x, y, space.all_sprites, image=image, speed_move=space.size_cell * 3)
+        super().__init__(space, x, y, space.all_sprites, image=image)
 
         print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()
 
-        if pressed_keys[pygame.K_RIGHT]:
-            self.true_x += args[0] * self.speed_move / 1000
-            self.rect.x = int(self.true_x)
+        if self.health <= 0:
+            # Если здоровье падает до 0 и меньше то игра заканчивается
+            self.gamespace.finish_game(message='Закончились жизни')
+
+        if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
+            # Движение вправо если нажата клавиша Right или D
+            self.true_x += self.get_moving(args[0])  # Установка новых истенных координат
+            self.rect.x = int(self.true_x)  # Установка новых координат квадрата
+            # Получения списка стен с которыми игрок пересёкся
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
+                # Если было пересечение то перемещение песонажа на максимально маленькое растояние
                 self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
 
-        if pressed_keys[pygame.K_LEFT]:
-            self.true_x -= args[0] * self.speed_move / 1000
+        if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
+            # Движение влево если нажата клавиша Left или A
+            self.true_x -= self.get_moving(args[0])
             self.rect.x = int(self.true_x)
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
                 self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
 
-        if pressed_keys[pygame.K_UP]:
-            self.true_y -= args[0] * self.speed_move / 1000
+        if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
+            # Движение вверх если нажата клавиша Up или W
+            self.true_y -= self.get_moving(args[0])
             self.rect.y = int(self.true_y)
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
                 self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
 
-        if pressed_keys[pygame.K_DOWN]:
-            self.true_y += args[0] * self.speed_move / 1000
+        if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
+            # Движение вниз если нажата клавиша Down или S
+            self.true_y += self.get_moving(args[0])
             self.rect.y = int(self.true_y)
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
