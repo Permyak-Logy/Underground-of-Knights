@@ -75,7 +75,8 @@ class GameExample:
             # Обновление дисплея
             pygame.display.flip()
 
-    def load_image(self, name, colorkey=None):
+    @staticmethod
+    def load_image(name, colorkey=None):
         """
         Возвращает картинку с именем name. Если есть colorkey, то у картинки делается фон прозрачным.
         Если colorkey == -1 то берётся цвет из самого верхнего угла картинки, иначе ...
@@ -224,7 +225,8 @@ class GameExample:
         # qp.moveCenter(cp)
         # self.move(qp.topLeft())
 
-    def terminate(self):
+    @staticmethod
+    def terminate():
         '''Выход из игры, и завершение главного цикла'''
         print('GameExample.close()') if DEBUG_INFO else None
         pygame.quit()
