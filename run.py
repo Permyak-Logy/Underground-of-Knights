@@ -151,12 +151,12 @@ class GameExample:
     def mouse_press_event(self, event):
         '''События мыши'''
         if self.mode == MODE_MENU:
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # Проверяет элементы после нажатия мышкой
                 self.menu.check_on_press_punkts(event.pos)
 
         if self.mode == MODE_GAME:
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self.game_space.check_on_press_punkts(event.pos)
 
     def key_press_event(self, event):
