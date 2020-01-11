@@ -1,8 +1,11 @@
-import pygame, os, sys
-from random import randrange
+import pygame
+import os
+import sys
+from win32api import GetSystemMetrics
 
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
+FULL_SCREEN = True
 
 
 class GameExample:
@@ -12,18 +15,24 @@ class GameExample:
 
     def __init__(self):
         '''Инициализация'''
-        (print('init Game') if DEBUG_INFO else None)
+        print('init Game') if DEBUG_INFO else None
         pygame.init()
 
         # Скрытие курсора
         pygame.mouse.set_visible(False)
 
-        # Инициализация размеров окна
-        n = 600
-        self.size = self.width, self.height = n * 2, n
-
-        # Инициализация главного кадра игры
-        self.main_screen = pygame.display.set_mode(self.size)
+        # Инициализация экрана
+        if FULL_SCREEN:
+            # Инициализация размеров окна
+            self.size = self.width, self.height = GetSystemMetrics(0), GetSystemMetrics(1)
+            # Инициализация главного кадра игры
+            self.main_screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF |
+                                                       pygame.FULLSCREEN)
+        else:
+            n = 600
+            self.size = self.width, self.height = n * 2, n
+            # Инициализация главного кадра игры
+            self.main_screen = pygame.display.set_mode(self.size)
 
         # Установка титульного имени окна
         pygame.display.set_caption('Soul Knight Demo')
@@ -169,7 +178,6 @@ class GameExample:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
                 self.open_menu()
-
 
     def start_game(self):
         '''Начать игру'''
