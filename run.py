@@ -352,7 +352,7 @@ class GameSpace:
                 if obj == '@':
                     # Tile(self, x, y)
                     self.player.set_pos(x, y)
-                    self.player.add(self.player_group)
+                    self.player.add(self.player_group, self.all_sprites)
 
         print('\tFinish generate level')
         return x, y
