@@ -265,6 +265,12 @@ class Menu:
             # Рисует все пункты меню
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
 
+    def add_punkt(self, punkt):
+        self.punkts.append(punkt)
+
+    def add_punkts(self, *punkts):
+        self.punkts += list(punkts)
+
     def get_punkt(self, number):
         '''Возвращает пункт по заданному номеру'''
         for punkt in self.punkts:
@@ -290,6 +296,7 @@ class GameSpace:
         self.items_group = pygame.sprite.Group()  # Спрайты вещей
         self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
         self.player_group = pygame.sprite.Group()  # Спрайт игрока
+        self.tiles_group = pygame.sprite.Group()  # Спрайты земли
 
         self.player = None  # Создание игрока
         self.clock = None  # Создание игрового времени
@@ -298,6 +305,7 @@ class GameSpace:
 
     def render(self, screen):
         '''Рисует игровое пространство'''
+        self.tiles_group.draw(screen)
         self.walls_group.draw(screen)
         self.items_group.draw(screen)
         self.player_group.draw(screen)
@@ -305,6 +313,12 @@ class GameSpace:
 
         for punkt in self.punkts:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
+
+    def add_punkt(self, punkt):
+        self.punkts.append(punkt)
+
+    def add_punkts(self, *punkts):
+        self.punkts += list(punkts)
 
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатиe'''
@@ -398,7 +412,7 @@ class GameSpace:
         self.walls_group.empty()
         self.items_group.empty()
         self.enemies_group.empty()
-        self.enemies_group.empty()
+        self.tiles_group.empty()
         self.player_group.empty()
 
     def get_punkt(self, number):
