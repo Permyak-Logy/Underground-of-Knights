@@ -19,7 +19,7 @@ class GameExample:
         pygame.mouse.set_visible(False)
 
         # Инициализация размеров окна
-        n = 600
+        n = 900
         self.size = self.width, self.height = n * 2, n
 
         # Инициализация главного кадра игры
@@ -531,6 +531,37 @@ class Punkt:
         return True
 
 
+class AnimatedSpriteForHero(object):
+    def init_animation(self, sheet, columns, rows):
+        # self.std_image = self.image
+        self.frames_run = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.std_image = self.image
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames_run.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update_animation(self, *args):
+        if args[1] == 1 or (args[1] == 0 and args[2] == 1):
+            self.cur_frame = (self.cur_frame + 5.7 * args[0] / 1000 * args[3] *
+                              len(self.frames_run) / 10) % len(self.frames_run)
+            self.image = self.frames_run[int(self.cur_frame)]
+        elif args[1] == -1 or (args[1] == 0 and args[2] == -1):
+            self.cur_frame = (self.cur_frame + 5.7 * args[0] / 1000 * args[3] *
+                              len(self.frames_run) / 10) % len(self.frames_run)
+            self.image = pygame.transform.flip(self.frames_run[int(self.cur_frame)], True, False)
+        else:
+            self.cur_frame = 0
+            self.image = self.std_image
+
+
 class BaseHero(pygame.sprite.Sprite):
     def __init__(self, space, x, y, *groups, image=None):
         super().__init__(*groups)
@@ -549,6 +580,7 @@ class BaseHero(pygame.sprite.Sprite):
         self.things = {'cur_weapon': None, 'second_weapon': None,
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
+        self.sight = 'right'
         self._armor = 0  # Броня
         self.health = 100  # Здоровье
         self._sprint_speed = 2  # Скорость спринта
@@ -558,6 +590,9 @@ class BaseHero(pygame.sprite.Sprite):
         self._radius = 1  # Радиус
         self._energy_efficiency = 1  # Энергоэфективность
         self._duration = 1  # Длительность
+
+    def update_image(self):
+        pass
 
     def set_pos(self, x, y):  # Установка позиции
         self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
@@ -614,19 +649,21 @@ class BaseHero(pygame.sprite.Sprite):
         return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
 
 
-class Player(BaseHero):
+class Player(BaseHero, AnimatedSpriteForHero):
     '''
     Класс игрока
     '''
     def __init__(self, space, x, y):
         image = pygame.transform.scale(space.game.load_image('player.png'), (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
-
+        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\тест.png', -1), (space.size_cell * 10,
+                                                                                               space.size_cell))
+        self.init_animation(sheet, 10, 1)
         print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()
-
+        move_kx = move_ky = 0
         if self.health <= 0:
             # Если здоровье падает до 0 и меньше то игра заканчивается
             self.gamespace.finish_game(message='Закончились жизни')
@@ -640,6 +677,7 @@ class Player(BaseHero):
             if sprite_list:
                 # Если было пересечение то перемещение песонажа на максимально маленькое растояние
                 self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
+            move_kx += 1
 
         if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
             # Движение влево если нажата клавиша Left или A
@@ -648,6 +686,7 @@ class Player(BaseHero):
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
                 self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
+            move_kx -= 1
 
         if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
             # Движение вверх если нажата клавиша Up или W
@@ -656,6 +695,7 @@ class Player(BaseHero):
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
                 self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
+            move_ky += 1
 
         if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
             # Движение вниз если нажата клавиша Down или S
@@ -664,6 +704,9 @@ class Player(BaseHero):
             sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
             if sprite_list:
                 self.rect.y = self.true_y = sprite_list[0].rect.y - self.rect.size[1]
+            move_ky -= 1
+
+        self.update_animation(args[0], move_kx, move_ky, self.sprint_speed())
 
 
 if __name__ == '__main__':
