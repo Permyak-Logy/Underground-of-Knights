@@ -282,6 +282,7 @@ class GameSpace:
         self.items_group = pygame.sprite.Group()  # Спрайты вещей
         self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
         self.player_group = pygame.sprite.Group()  # Спрайт игрока
+        self.tiles_group = pygame.sprite.Group()  # Спрайты земли
 
         self.player = None  # Создание игрока
         self.clock = None  # Создание игрового времени
@@ -290,6 +291,7 @@ class GameSpace:
 
     def render(self, screen):
         '''Рисует игровое пространство'''
+        self.tiles_group.draw(screen)
         self.walls_group.draw(screen)
         self.items_group.draw(screen)
         self.player_group.draw(screen)
@@ -345,14 +347,11 @@ class GameSpace:
         for y in range(len(level)):
             for x in range(len(level[y])):
                 obj = level[y][x]
-                if obj == '.':
-                    # Tile(self, x, y)
-                    pass
+                if obj != '_':
+                    Tile(self, x, y)
                 if obj == '#':
-                    # Wall(self, x, y)
-                    pass
+                    Wall(self, x, y)
                 if obj == '@':
-                    # Tile(self, x, y)
                     # self.player.set_pos(x, y)
                     # self.player.add(self.player_group)
                     pass
@@ -390,7 +389,7 @@ class GameSpace:
         self.walls_group.empty()
         self.items_group.empty()
         self.enemies_group.empty()
-        self.enemies_group.empty()
+        self.tiles_group.empty()
         self.player_group.empty()
 
     def get_punkt(self, number):
@@ -531,6 +530,30 @@ class Punkt:
             return False
         self.func()
         return True
+
+
+class Wall(pygame.sprite.Sprite):
+    def __init__(self, space, x, y):
+        super().__init__(space.all_sprites, space.walls_group)
+        self.gamespace = space  # Подключение игрового пространства
+        # Создание изображения
+        self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
+        self.image.fill(pygame.color.Color('gray'))
+        # Создание прямоукольника
+        self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
+        print(f'Wall(x={x}, y={y}) create True') if DEBUG_INFO else None
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, space, x, y):
+        super().__init__(space.all_sprites, space.tiles_group)
+        self.gamespace = space  # Подключение игрового пространства
+        # Создание изображения
+        self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
+        self.image.fill(pygame.color.Color('brown'))
+        # Создание прямоугольника
+        self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
+        print(f'Tile(x={x}, y={y}) create True') if DEBUG_INFO else None
 
 
 if __name__ == '__main__':
