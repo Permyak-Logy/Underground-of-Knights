@@ -156,7 +156,11 @@ class GameExample:
 
         if self.mode == MODE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN:
-                self.game_space.check_on_press_punkts(event.pos)
+                if self.game_space.check_on_press_punkts(event.pos):
+                    pass
+                elif not self.game_space.pause_status:
+                    self.game_space.player.attack(event.pos)
+
 
     def key_press_event(self, event):
         '''События клавиатуры'''
@@ -246,7 +250,9 @@ class Menu:
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатие'''  # Не могу придумать...
         for punckt in self.punkts:
-            punckt.on_click(pos)
+            if punckt.on_click(pos):
+                return True
+        return False
 
     def render(self, screen):
         '''Рисует меню'''
@@ -300,7 +306,8 @@ class GameSpace:
         '''Проверяет пункты на нажатиe'''
         for punkt in self.punkts:
             if punkt.on_click(pos):
-                break
+                return True
+        return False
 
     def new_game(self):
         '''Сбрасывает предыдущий прогресс и данные'''
@@ -537,7 +544,7 @@ class AnimatedSpriteForHero(object):
         self.frames_run = []
         self.cut_sheet(sheet, columns, rows)
         self.cur_frame = 0
-        self.std_image = self.image
+        self.std_image = self.frames_run[0]
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
@@ -591,8 +598,12 @@ class BaseHero(pygame.sprite.Sprite):
         self._energy_efficiency = 1  # Энергоэфективность
         self._duration = 1  # Длительность
 
-    def update_image(self):
-        pass
+    def attack(self, pos):
+        weapon = self.things.get('cur_weapon')
+        if weapon is None:
+            return
+        else:
+            weapon.attack(pos)
 
     def set_pos(self, x, y):  # Установка позиции
         self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
@@ -656,9 +667,9 @@ class Player(BaseHero, AnimatedSpriteForHero):
     def __init__(self, space, x, y):
         image = pygame.transform.scale(space.game.load_image('player.png'), (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
-        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\тест.png', -1), (space.size_cell * 10,
-                                                                                               space.size_cell))
-        self.init_animation(sheet, 10, 1)
+        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\тест2.png', -1), (space.size_cell * 5,
+                                                                                               space.size_cell * 2))
+        self.init_animation(sheet, 5, 2)
         print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
 
     def update(self, *args):
