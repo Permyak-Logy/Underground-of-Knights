@@ -322,7 +322,7 @@ class GameSpace:
         self.player = None  # Создание игрока
         self.clock = None  # Создание игрового времени
 
-        # self.camera = Camera(self)
+        self.camera = Camera(self)
 
     def render(self, screen):
         '''Рисует игровое пространство'''
@@ -376,9 +376,9 @@ class GameSpace:
             return
         tick = self.clock.tick()
         self.player_group.update(tick)
-        # camera.update(self.player)
+        # self.camera.update(self.player)
         # for sprite in self.all_sprites:
-        #     camera.apply(sprite)
+        #    self.camera.apply(sprite)
 
     def generate_level(self, level):
         print('\tStart generate level') if DEBUG_INFO else None
@@ -790,6 +790,24 @@ class Tile(pygame.sprite.Sprite):
         # Создание прямоугольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
         print(f'Tile(x={x}, y={y}) create True') if DEBUG_INFO else None
+
+
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self, gamespace):
+        self.gamespace = gamespace
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - self.gamespace.game.width // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - self.gamespace.game.height // 2)
 
 
 if __name__ == '__main__':
