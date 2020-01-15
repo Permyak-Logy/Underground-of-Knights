@@ -170,19 +170,20 @@ class GameExample:
             elif event.key == pygame.K_ESCAPE:
                 self.open_menu()
 
-
     def start_game(self):
         '''Начать игру'''
         print('GameExample.start_game()') if DEBUG_INFO else None
         self.mode = MODE_GAME
         self.game_space.new_game()
         self.unset_pause()
+        self.menu.music_start()
 
     def open_menu(self):
         '''Открывает меню'''
         print('GameExample.open_menu()') if DEBUG_INFO else None
         self.mode = MODE_MENU
         self.set_pause()
+        self.menu.music_start(True)
 
     def open_settings(self):
         '''Открывает настройки'''
@@ -244,6 +245,18 @@ class Menu:
         background = self.game.load_image('background menu.jpg')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
+        pygame.mixer.music.load('data/music/main_menu.mp3')
+        self.music_start(True, 0.2)
+
+    def music_start(self, start=False, volume=False):
+        # Отвечает за запуск музыки в главном меню
+        if start:
+            pygame.mixer.music.play(-1)
+            # изменение громкости если передан параметр
+            if volume:
+                pygame.mixer.music.set_volume(volume)
+        else:
+            pygame.mixer.music.pause()
 
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатие'''  # Не могу придумать...
