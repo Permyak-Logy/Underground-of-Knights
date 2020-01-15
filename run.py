@@ -5,7 +5,7 @@ from win32api import GetSystemMetrics
 
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
-FULL_SCREEN = True
+FULL_SCREEN = False
 
 
 class GameExample:
@@ -376,9 +376,9 @@ class GameSpace:
             return
         tick = self.clock.tick()
         self.player_group.update(tick)
-        # self.camera.update(self.player)
-        # for sprite in self.all_sprites:
-        #    self.camera.apply(sprite)
+        self.camera.update(self.player)
+        for sprite in self.all_sprites:
+            self.camera.apply(sprite)
 
     def generate_level(self, level):
         print('\tStart generate level') if DEBUG_INFO else None
@@ -576,11 +576,10 @@ class Punkt:
 
 class AnimatedSpriteForHero(object):
     def init_animation(self, sheet, columns, rows):
-        # self.std_image = self.image
+        self.std_image = self.image
         self.frames_run = []
         self.cut_sheet(sheet, columns, rows)
         self.cur_frame = 0
-        self.std_image = self.frames_run[0]
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
@@ -712,12 +711,12 @@ class Player(BaseHero, AnimatedSpriteForHero):
     Класс игрока
     '''
     def __init__(self, space, x, y):
-        image = pygame.transform.scale(space.game.load_image('player.png'), (space.size_cell, space.size_cell))
+        image = pygame.transform.scale(space.game.load_image('player\std.png', -1), (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
-        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\Knight_run.png', -1), (space.size_cell * 10,
-                                                                                               space.size_cell * 1))
+        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
+                                       (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet, 10, 1)
-        self._sprint_speed = 20
+        self._sprint_speed = 2
         print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
 
     def update(self, *args):
@@ -773,8 +772,7 @@ class Wall(pygame.sprite.Sprite):
         super().__init__(space.all_sprites, space.walls_group)
         self.gamespace = space  # Подключение игрового пространства
         # Создание изображения
-        self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
-        self.image.fill(pygame.color.Color('gray'))
+        self.image = pygame.transform.scale(space.game.load_image('wall\wall.jpg'), (space.size_cell, space.size_cell))
         # Создание прямоукольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
         print(f'Wall(x={x}, y={y}) create True') if DEBUG_INFO else None
@@ -785,8 +783,7 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(space.all_sprites, space.tiles_group)
         self.gamespace = space  # Подключение игрового пространства
         # Создание изображения
-        self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
-        self.image.fill(pygame.color.Color('brown'))
+        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'), (space.size_cell, space.size_cell))
         # Создание прямоугольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
         print(f'Tile(x={x}, y={y}) create True') if DEBUG_INFO else None
@@ -803,6 +800,9 @@ class Camera:
     def apply(self, obj):
         obj.rect.x += self.dx
         obj.rect.y += self.dy
+        if isinstance(obj, BaseHero):
+            obj.true_x += self.dx
+            obj.true_y += self.dy
 
     # позиционировать камеру на объекте target
     def update(self, target):
