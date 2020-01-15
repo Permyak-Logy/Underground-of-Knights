@@ -158,9 +158,10 @@ class GameExample:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.game_space.check_on_press_punkts(event.pos):
                     pass
+                elif self.game_space.player.take_thing(event.pos):
+                    pass
                 elif not self.game_space.pause_status:
                     self.game_space.player.attack(event.pos)
-
 
     def key_press_event(self, event):
         '''События клавиатуры'''
@@ -172,7 +173,6 @@ class GameExample:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
                 self.open_menu()
-
 
     def start_game(self):
         '''Начать игру'''
@@ -582,6 +582,8 @@ class BaseHero(pygame.sprite.Sprite):
         self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
 
+        self.take_radius = space.size_cell
+
         self.mask = pygame.mask.from_surface(self.image)
 
         self.things = {'cur_weapon': None, 'second_weapon': None,
@@ -622,7 +624,15 @@ class BaseHero(pygame.sprite.Sprite):
         self.things['cur_weapon'], self.things['second_weapon'] = (self.things['second_weapon'],
                                                                    self.things['cur_weapon'])
 
-    def put_thing(self, thing):
+    def take_thing(self, pos):
+        thing = None
+        for elem in self.gamespace.items_group.sprites():
+            if elem.rect.collidepoint(pos):
+                thing = elem
+        if thing is None:
+            return False
+        if not ((self.rect.x - thing.rect.x) ** 2 + (self.rect.y - thing.rect.y) ** 2) ** 0.5 < self.take_radius:
+            return False
         if thing.type == 'weapon':
             if self.things['cur_weapon'] is None:
                 self.things['cur_weapon'] = thing
@@ -631,6 +641,7 @@ class BaseHero(pygame.sprite.Sprite):
             else:
                 self.things['cur_weapon'] = thing
         self.things[thing.type] = thing
+        return True
 
     def armor(self):  # Кол-во брони  броня
         return sum(map(lambda key: self.things[key].armor if self.things.get(key) else 0,
@@ -667,9 +678,10 @@ class Player(BaseHero, AnimatedSpriteForHero):
     def __init__(self, space, x, y):
         image = pygame.transform.scale(space.game.load_image('player.png'), (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
-        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\тест2.png', -1), (space.size_cell * 5,
-                                                                                               space.size_cell * 2))
-        self.init_animation(sheet, 5, 2)
+        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\Knight_run.png', -1), (space.size_cell * 10,
+                                                                                               space.size_cell * 1))
+        self.init_animation(sheet, 10, 1)
+        self._sprint_speed = 20
         print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
 
     def update(self, *args):
