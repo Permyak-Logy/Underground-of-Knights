@@ -3,9 +3,9 @@ import os
 import sys
 from win32api import GetSystemMetrics
 
-MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
-DEBUG_INFO = True
-FULL_SCREEN = False
+# Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
+MODE_MENU, MODE_GAME = 0, 1
+DEBUG_INFO = True  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -18,20 +18,20 @@ class GameExample:
         print('init Game') if DEBUG_INFO else None
         pygame.init()
 
+        # Загрузка данных настроек
+        self.data_settings = self.load_settings()
+
         # Скрытие курсора
         pygame.mouse.set_visible(False)
 
-        # Инициализация экрана
-        if FULL_SCREEN:
-            # Инициализация размеров окна
-            self.size = self.width, self.height = GetSystemMetrics(0), GetSystemMetrics(1)
-            # Инициализация главного кадра игры
+        # Инициализация разрешения окна
+        self.size = self.width, self.height = self.data_settings['matrix']
+
+        # Инициализация режима экрана и главного кадра игры
+        if self.data_settings['screenfull']:
             self.main_screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF |
                                                        pygame.FULLSCREEN)
         else:
-            n = 600
-            self.size = self.width, self.height = n * 2, n
-            # Инициализация главного кадра игры
             self.main_screen = pygame.display.set_mode(self.size)
 
         # Установка титульного имени окна
@@ -74,6 +74,7 @@ class GameExample:
                 # Рисование меню
                 self.menu.render(self.main_screen)
             if self.mode == MODE_GAME:
+                # Обновление игрового пространства
                 self.game_space.update()
                 # Рисование ирового пространства
                 self.game_space.render(self.main_screen)
@@ -83,6 +84,22 @@ class GameExample:
 
             # Обновление дисплея
             pygame.display.flip()
+
+    @staticmethod
+    def load_settings():
+        result = {}
+        with open('data\settings data', encoding='utf8') as file:
+            data = file.readlines()
+        for elem in data:
+            key, val = elem.split()
+            print(key, val)
+            if key == 'matrix':
+                result[key] = tuple(map(int, val.split('x')))
+            elif key == 'screenfull':
+                result[key] = val == 'true'
+            elif key == 'volume':
+                result[key] = float(val)
+        return result
 
     @staticmethod
     def load_image(name, colorkey=None):
@@ -133,6 +150,8 @@ class GameExample:
 
         # Создание меню с раннее созданными пунктами
         self.menu = Menu(self, punkts)
+        self.menu.music_start(True, self.data_settings['volume'])  # Начало музыки
+
 
     def load_game_space(self):
         '''Загрузка ирового пространства'''
@@ -153,8 +172,9 @@ class GameExample:
                         isfill=False, color_text=_Color('blue'), number=7, bolden=False,
                         font=_SysFont(None, self.height // 2), func=self.unset_pause)]
 
+        # Создание GameSpace
         self.game_space = GameSpace(self, punkts)
-
+        # Скрытие пункта PAUSE
         self.game_space.get_punkt(7).hide()
 
     def mouse_press_event(self, event):
@@ -167,47 +187,57 @@ class GameExample:
         if self.mode == MODE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.game_space.check_on_press_punkts(event.pos):
+                    # Проверка на нажатие punkt
+                    pass
+                elif self.game_space.pause_status:
+                    # Если пауза то нтичего не делать
                     pass
                 elif self.game_space.player.take_thing(event.pos):
+                    # Проверка на поднятие вещи в позиции event.pos
                     pass
-                elif not self.game_space.pause_status:
+                else:
+                    # Начать атаку позиции event.pos
                     self.game_space.player.attack(event.pos)
 
     def key_press_event(self, event):
         '''События клавиатуры'''
         if self.mode == MODE_GAME:
             if event.key == pygame.K_p:
+                # Установка и убирание паузы при нажатии клавиши P
                 if self.game_space.pause_status:
                     self.unset_pause()
                 else:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
+                # Открытие меню при нажатии на Escape
                 self.open_menu()
 
     def start_game(self):
         '''Начать игру'''
         print('GameExample.start_game()') if DEBUG_INFO else None
-        self.mode = MODE_GAME
-        self.game_space.new_game()
-        self.unset_pause()
-        self.menu.music_start()
+        self.mode = MODE_GAME  # Установка режима MODE_GAME
+        self.game_space.new_game()  # Начало новой игры в game_space
+        self.unset_pause()  # Убирание паузы
+        self.menu.music_start()  # Остановка музыки
 
     def open_menu(self):
         '''Открывает меню'''
         print('GameExample.open_menu()') if DEBUG_INFO else None
-        self.mode = MODE_MENU
-        self.set_pause()
-        self.menu.music_start(True)
+        self.mode = MODE_MENU  # Установка режима MODE_MENU
+        self.set_pause()  # Установка паузы
+        self.menu.music_start(True)  # Старт музыки
 
     def open_settings(self):
         '''Открывает настройки'''
         print('GameExample.open_settings()') if DEBUG_INFO else None
+        os.startfile('settings launcher.exe')
 
     def open_guide(self):
         '''Открывает руководство'''
         print('GameExample.open_guide()') if DEBUG_INFO else None
 
     def set_pause(self):
+        '''Устанавливает паузу в GameSpace'''
         print('GameExample.set_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = True
         self.game_space.get_punkt(5).hide()
@@ -215,6 +245,7 @@ class GameExample:
         self.game_space.get_punkt(7).show()
 
     def unset_pause(self):
+        '''Убирает паузу в GameSpace'''
         print('GameExample.unset_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = False
         self.game_space.get_punkt(5).show()
@@ -255,15 +286,15 @@ class Menu:
     '''
 
     def __init__(self, game, punkts=None):
+        '''Инициализвация'''
         self.game = game  # Подключение игры
         background = self.game.load_image('background menu.jpg')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
-        pygame.mixer.music.load('data/music/main_menu.mp3')
-        self.music_start(True, 0.2)
+        pygame.mixer.music.load('data/music/main_menu.mp3')  # Загруска музыки
 
     def music_start(self, start=False, volume=False):
-        # Отвечает за запуск музыки в главном меню
+        '''Отвечает за запуск музыки в главном меню'''
         if start:
             pygame.mixer.music.play(-1)
             # изменение громкости если передан параметр
@@ -287,9 +318,11 @@ class Menu:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
 
     def add_punkt(self, punkt):
+        '''Добавляет punkt в меню'''
         self.punkts.append(punkt)
 
     def add_punkts(self, *punkts):
+        '''Добавляет пункты в меню'''
         self.punkts += list(punkts)
 
     def get_punkt(self, number):
@@ -310,7 +343,7 @@ class GameSpace:
         self.levels = []  # Список уровней
         self.level_x = self.level_y = 0
         self.pause_status = False
-        self.size_cell = int(self.game.height * 0.09)
+        self.size_cell = int(self.game.height * 0.2)
 
         self.all_sprites = pygame.sprite.Group()  # Все спрайты
         self.walls_group = pygame.sprite.Group()  # Спрайты стен
@@ -336,9 +369,11 @@ class GameSpace:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
 
     def add_punkt(self, punkt):
+        '''Добавляет пункт в GameSpace'''
         self.punkts.append(punkt)
 
     def add_punkts(self, *punkts):
+        '''Добавляет пункты в GameSpace'''
         self.punkts += list(punkts)
 
     def check_on_press_punkts(self, pos):
@@ -359,6 +394,7 @@ class GameSpace:
         self.clock = pygame.time.Clock()
 
     def get_next_level(self):
+        '''Переключение на следующий уровень'''
         try:
             return self.levels.pop(0)
         except IndexError:
@@ -710,13 +746,13 @@ class Player(BaseHero, AnimatedSpriteForHero):
     '''
     Класс игрока
     '''
+
     def __init__(self, space, x, y):
         image = pygame.transform.scale(space.game.load_image('player\std.png', -1), (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
         sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
                                        (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet, 10, 1)
-        self._sprint_speed = 2
         print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
 
     def update(self, *args):
@@ -783,7 +819,8 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(space.all_sprites, space.tiles_group)
         self.gamespace = space  # Подключение игрового пространства
         # Создание изображения
-        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'), (space.size_cell, space.size_cell))
+        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'),
+                                            (space.size_cell, space.size_cell))
         # Создание прямоугольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
         print(f'Tile(x={x}, y={y}) create True') if DEBUG_INFO else None
