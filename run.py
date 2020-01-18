@@ -1,7 +1,7 @@
 import pygame
 import os
 import sys
-from win32api import GetSystemMetrics
+from settings_launcher import Example, QApplication
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
@@ -126,32 +126,35 @@ class GameExample:
         _SysFont = pygame.font.SysFont
         _Color = pygame.Color
 
+        # Создание меню
+        self.menu = Menu(self)
+
         # fonts = ['consolas', 'cuprum', 'gabriola', ''] # Красивые шрифты
         # Пункты меню
-        punkts = [Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
-                        isfill=False, color_text=_Color('white'), number=0,
-                        font=_SysFont('gabriola', self.height // 10), bolden=False),
 
-                  Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('green'), number=1,
-                        font=_SysFont('gabriola', self.height // 20), func=self.start_game),
+        label_title = Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
+                            isfill=False, color_text=_Color('white'), number=0,
+                            font=_SysFont('gabriola', self.height // 10), bolden=False)
 
-                  Punkt(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('white'), number=2,
-                        font=_SysFont('gabriola', self.height // 20), func=self.open_settings),
+        btn_play = Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
+                         isfill=True, color_text=_Color('green'), number=1,
+                         font=_SysFont('gabriola', self.height // 20), func=self.start_game)
 
-                  Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('white'), number=3,
-                        font=_SysFont('gabriola', self.height // 20), func=self.open_guide),
+        btn_settings = Punkt(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
+                             isfill=True, color_text=_Color('white'), number=2,
+                             font=_SysFont('gabriola', self.height // 20), func=self.open_settings)
 
-                  Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('red'), number=4,
-                        font=_SysFont('gabriola', self.height // 20), func=self.terminate)]
+        btn_guide = Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
+                          isfill=True, color_text=_Color('white'), number=3,
+                          font=_SysFont('gabriola', self.height // 20), func=self.open_guide)
 
-        # Создание меню с раннее созданными пунктами
-        self.menu = Menu(self, punkts)
+        btn_exit = Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
+                         isfill=True, color_text=_Color('red'), number=4,
+                         font=_SysFont('gabriola', self.height // 20), func=self.terminate)
+
+        self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit)
+
         self.menu.music_start(True, self.data_settings['volume'])  # Начало музыки
-
 
     def load_game_space(self):
         '''Загрузка ирового пространства'''
@@ -161,19 +164,23 @@ class GameExample:
         _SysFont = pygame.font.SysFont
         _Color = pygame.Color
 
-        punkts = [Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
-                        isfill=False, color_text=_Color('yellow'), number=5,
-                        font=_SysFont('gabriola', self.height // 20), func=self.open_menu),
-                  Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
-                        isfill=False, color_text=_Color('yellow'), number=6,
-                        font=_SysFont('gabriola', self.height // 20), func=self.set_pause),
-
-                  Punkt(text='PAUSE', pos=(0, 0), size=self.size,
-                        isfill=False, color_text=_Color('blue'), number=7, bolden=False,
-                        font=_SysFont(None, self.height // 2), func=self.unset_pause)]
-
         # Создание GameSpace
-        self.game_space = GameSpace(self, punkts)
+        self.game_space = GameSpace(self)
+
+        btn_exit = Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
+                         isfill=False, color_text=_Color('yellow'), number=5,
+                         font=_SysFont('gabriola', self.height // 20), func=self.open_menu)
+
+        btn_pause = Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
+                          isfill=False, color_text=_Color('yellow'), number=6,
+                          font=_SysFont('gabriola', self.height // 20), func=self.set_pause)
+
+        label_pause = Punkt(text='PAUSE', pos=(0, 0), size=self.size,
+                            isfill=False, color_text=_Color('blue'), number=7, bolden=False,
+                            font=_SysFont(None, self.height // 2), func=self.unset_pause)
+
+        self.game_space.add_punkts(btn_exit, btn_pause, label_pause)
+
         # Скрытие пункта PAUSE
         self.game_space.get_punkt(7).hide()
 
@@ -230,7 +237,13 @@ class GameExample:
     def open_settings(self):
         '''Открывает настройки'''
         print('GameExample.open_settings()') if DEBUG_INFO else None
-        os.startfile('settings launcher.exe')
+        # os.startfile('settings launcher.exe')
+
+        app = QApplication(sys.argv)
+        ex = Example()
+        app.exec_()
+        for _ in pygame.event.get():
+            pass
 
     def open_guide(self):
         '''Открывает руководство'''
