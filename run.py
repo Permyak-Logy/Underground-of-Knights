@@ -111,28 +111,32 @@ class GameExample:
 
         # fonts = ['consolas', 'cuprum', 'gabriola', ''] # Красивые шрифты
         # Пункты меню
-        punkts = [Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
-                        isfill=False, color_text=_Color('white'), number=0,
-                        font=_SysFont('gabriola', self.height // 10), bolden=False),
+        self.menu = Menu(self)  # Создание меню
 
-                  Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('green'), number=1,
-                        font=_SysFont('gabriola', self.height // 20), func=self.start_game),
+        label_title = Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
+                            show_background=False, color_text=_Color('white'), number=0,
+                            font=_SysFont('gabriola', self.height // 10), bolden=False)
 
-                  Punkt(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('white'), number=2,
-                        font=_SysFont('gabriola', self.height // 20), func=self.open_settings),
+        btn_play = Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
+                         show_background=False, color_text=_Color('green'), number=1,
+                         font=_SysFont('gabriola', self.height // 20), func=self.start_game)
 
-                  Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('white'), number=3,
-                        font=_SysFont('gabriola', self.height // 20), func=self.open_guide),
+        btn_settings = Punkt(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
+                             show_background=False, color_text=_Color('white'), number=2,
+                             font=_SysFont('gabriola', self.height // 20), func=self.open_settings)
 
-                  Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
-                        isfill=False, color_text=_Color('red'), number=4,
-                        font=_SysFont('gabriola', self.height // 20), func=self.terminate)]
+        btn_guide = Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
+                          show_background=False, color_text=_Color('white'), number=3,
+                          font=_SysFont('gabriola', self.height // 20), func=self.open_guide)
 
-        # Создание меню с раннее созданными пунктами
-        self.menu = Menu(self, punkts)
+        btn_exit = Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
+                         show_background=False, color_text=_Color('red'), number=4,
+                         font=_SysFont('gabriola', self.height // 20), func=self.terminate)
+
+        image = pygame.Surface(size=btn_exit.get_size())
+        btn_exit.set_image(image)
+
+        self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit)  # Добавление пунктов
 
     def load_game_space(self):
         '''Загрузка ирового пространства'''
@@ -142,20 +146,23 @@ class GameExample:
         _SysFont = pygame.font.SysFont
         _Color = pygame.Color
 
-        punkts = [Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
-                        isfill=False, color_text=_Color('yellow'), number=5,
-                        font=_SysFont('gabriola', self.height // 20), func=self.open_menu),
-                  Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
-                        isfill=False, color_text=_Color('yellow'), number=6,
-                        font=_SysFont('gabriola', self.height // 20), func=self.set_pause),
+        # Создание игрового пространства
+        self.game_space = GameSpace(self)
 
-                  Punkt(text='PAUSE', pos=(0, 0), size=self.size,
-                        isfill=False, color_text=_Color('blue'), number=7, bolden=False,
-                        font=_SysFont(None, self.height // 2), func=self.unset_pause)]
+        btn_exit = Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
+                         show_background=True, color_text=_Color('yellow'), number=5,
+                         font=_SysFont('gabriola', self.height // 20), func=self.open_menu)
 
-        self.game_space = GameSpace(self, punkts)
+        btn_pause = Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
+                          show_background=False, color_text=_Color('yellow'), number=6,
+                          font=_SysFont('gabriola', self.height // 20), func=self.set_pause)
 
-        self.game_space.get_punkt(7).hide()
+        label_pause = Punkt(text='PAUSE', pos=(int(self.width * 0.4), int(self.height * 0.4)), size=-1,
+                            show_background=False, color_text=_Color('blue'), number=7, bolden=False,
+                            font=_SysFont(None, self.height // 2))
+        label_pause.hide()
+
+        self.game_space.add_punkts(btn_exit, btn_pause, label_pause)  # Добавление пунктов
 
     def mouse_press_event(self, event):
         '''События мыши'''
@@ -446,27 +453,41 @@ class Punkt:
     Виджеты (похожи на PushButton и Label из библиотеки PyQt5)
     '''
 
-    def __init__(self, text=None, pos=(0, 0), size=-1, font=None, color=(100, 100, 100), isfill=True,
-                 color_active=(0, 255, 255), color_text=(0, 0, 0), image=None, func=None, number=0, bolden=True):
+    def __init__(self, text=None, pos=(0, 0), size=-1, font=None, color=(100, 100, 100), show_background=True,
+                 color_active=(0, 255, 255), color_text=(0, 0, 0), func=None, number=0, bolden=True):
         '''Инициализация'''
         print(f'\t\tinit punct text: "{text}"", number: "{number}" : ', end='') if DEBUG_INFO else None
 
         self.set_text(text)  # Установка текста
         self.set_font(font)  # Установка шрифта
         self.connect(func)  # Подключение функции
-        self.set_image(image)  # Установка картинки
-        self.show()  # Отображение
+
         self.set_color(color, color_active, color_text)  # Установка цветов элементов
-        self.isfill = isfill  # Заливка
+
+        self.show_background = show_background  # Заливка
         self.bolden = bolden  # Флаг выделения при наведении курсора
-        if size == -1:  # Автоматическая генерация размера
-            self.resize(self.get_size_text())
-        else:
-            self.resize(size)
-        self.move(*pos)
-        self.number = number
+        self.number = number  # Установка номера
+
+        self.set_pos(*pos)  # Установка позиции
+        # Установка размера виджета. Если указан size == -1, то размер установится
+        # минимальным возможным для отображения надписи
+        self.resize(self.get_size_text() if size == -1 else size)
+
+        self.set_image(None)  # Установка картинки
+        self.show()  # Отображение
 
         print('True\n', end='') if DEBUG_INFO else None
+
+    def get_size(self):
+        '''Возвращает размеры'''
+        return self.size
+
+    def get_size_text(self):
+        '''Возвращает размеры текста'''
+        self.font.set_bold(True) if self.bolden else None
+        size = self.font.size(self.text)
+        self.font.set_bold(False) if self.bolden else None
+        return size
 
     def set_text(self, text):
         '''Устанавливает текст'''
@@ -478,30 +499,27 @@ class Punkt:
 
     def set_image(self, image):
         '''Устанавливает картинку'''
-        self.image = pygame.transform.scale(image, self.size) if image is not None else None
+        self.image = image
 
     def set_color(self, color=None, color_active=None, color_text=None):
         '''Устанавливает цвета элементов'''
         if color is not None:
+            # Цвет неактивного фона
             self.color = color
         if color_active is not None:
+            # Цвет активного фона
             self.color_active = color_active
         if color_text is not None:
+            # Цвет текста
             self.color_text = color_text
 
-    def move(self, x, y):
+    def set_pos(self, x, y):
         '''Устанавливает координаты пункта'''
         self.pos = self.x, self.y = x, y
 
     def resize(self, size):
         '''Меняет размеры'''
         self.size = self.width, self.height = size
-
-    def get_size_text(self):
-        self.font.set_bold(True) if self.bolden else None
-        size = self.font.size(self.text)
-        self.font.set_bold(False) if self.bolden else None
-        return size
 
     def show(self):
         """Показать виджет"""
@@ -520,19 +538,17 @@ class Punkt:
         if not self.isshowed:
             # Не рисует если пункт скрыт
             return
-        surface = pygame.Surface(self.size)
-        if self.isfill:  # Заливка области
-            surface.fill(self.color if
-                         not ispressed or
-                         not self.bolden else
-                         self.color_active)
+        surface = pygame.Surface(size=self.get_size())
+        if self.show_background:  # Заливка области
+            color_background = self.color if not ispressed or not self.bolden else self.color_active
+            surface.fill(color_background)
         else:  # Преобразование в прозрачный фон
             surface.fill((1, 0, 0))
             surface.set_colorkey((1, 0, 0))
             surface.convert_alpha()
 
         if self.image is not None:  # наложение картинки если есть она
-            surface.blit(self.image, self.pos)
+            surface.blit(self.image, (0, 0))
 
         if self.text is not None:  # Наложение текста если он есть
             if not ispressed or not self.bolden:
@@ -710,6 +726,7 @@ class Player(BaseHero, AnimatedSpriteForHero):
     '''
     Класс игрока
     '''
+
     def __init__(self, space, x, y):
         image = pygame.transform.scale(space.game.load_image('player\std.png', -1), (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
@@ -783,7 +800,8 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(space.all_sprites, space.tiles_group)
         self.gamespace = space  # Подключение игрового пространства
         # Создание изображения
-        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'), (space.size_cell, space.size_cell))
+        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'),
+                                            (space.size_cell, space.size_cell))
         # Создание прямоугольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
         print(f'Tile(x={x}, y={y}) create True') if DEBUG_INFO else None
