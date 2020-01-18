@@ -215,7 +215,7 @@ class GameExample:
         print('GameExample.open_guide()') if DEBUG_INFO else None
 
     def set_pause(self):
-        print('GameExample.set_pause()') if DEBUG_INFO else None
+        print('GameSpace.set_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = True
         self.game_space.get_punkt(5).hide()
         self.game_space.get_punkt(6).hide()
@@ -238,14 +238,6 @@ class GameExample:
 
             self.main_screen.fill(pygame.color.Color('black'))
             pygame.display.flip()
-
-    def center(self):
-        """Центрирование как в QT"""
-        print('GameExample.center()') if DEBUG_INFO else None
-        # qp = self.frameGeometry()
-        # cp = QDesktopWidget().availableGeometry().center()
-        # qp.moveCenter(cp)
-        # self.move(qp.topLeft())
 
     @staticmethod
     def terminate():
