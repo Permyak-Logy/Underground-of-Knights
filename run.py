@@ -151,12 +151,22 @@ class GameExample:
                           show_background=False, color_text=_Color('yellow'), number=6,
                           font=_SysFont('gabriola', self.height // 20), func=self.set_pause)
 
-        label_pause = Punkt(text='PAUSE', pos=(int(self.width * 0.4), int(self.height * 0.4)), size=-1,
+        label_pause = Punkt(text='PAUSE', pos=(int(self.width * 0.2), int(self.height * 0.4)), size=-1,
                             show_background=False, color_text=_Color('blue'), number=7, bolden=False,
                             font=_SysFont(None, self.height // 2))
         label_pause.hide()
 
-        self.game_space.add_punkts(btn_exit, btn_pause, label_pause)  # Добавление пунктов
+        size = tuple([int(self.width * 0.05)] * 2)
+        label_cur_weapon = Punkt(text='test', pos=(int(self.width * 0.05), int(self.height * 0.6)),
+                                 size=size, show_background=False,
+                                 number=8)  # func=self.game_space.player.change_weapons
+
+        label_second_weapon = Punkt(text='test2', pos=(int(self.width * 0.05), int(self.height * 0.75)),
+                                    size=size, show_background=False,
+                                    number=9)  # func=self.game_space.player.change_weapons
+
+        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
+                                   label_second_weapon)  # Добавление пунктов
 
     def mouse_press_event(self, event):
         '''События мыши'''
@@ -166,12 +176,14 @@ class GameExample:
                 self.menu.check_on_press_punkts(event.pos)
 
         if self.mode == MODE_GAME:
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.game_space.check_on_press_punkts(event.pos):
                     pass
+                elif self.game_space.pause_status:
+                    self.unset_pause()
                 elif self.game_space.player.take_thing(event.pos):
                     pass
-                elif not self.game_space.pause_status:
+                else:
                     self.game_space.player.attack(event.pos)
 
     def key_press_event(self, event):
@@ -184,6 +196,8 @@ class GameExample:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
                 self.open_menu()
+            elif self.game_space.pause_status:
+                self.unset_pause()
 
     def start_game(self):
         '''Начать игру'''
@@ -303,7 +317,7 @@ class GameSpace:
         self.levels = []  # Список уровней
         self.level_x = self.level_y = 0
         self.pause_status = False
-        self.size_cell = int(self.game.height * 0.09)
+        self.size_cell = int(self.game.height * 0.2)
 
         self.all_sprites = pygame.sprite.Group()  # Все спрайты
         self.walls_group = pygame.sprite.Group()  # Спрайты стен
@@ -348,6 +362,13 @@ class GameSpace:
         self.levels.clear()
         self.load_levels('test')
         self.player = Player(self, 0, 0)
+
+        cur_weapon_punkt = self.get_punkt(8)
+        second_weapon_punkt = self.get_punkt(9)
+
+        cur_weapon_punkt.connect(self.player.change_weapons)
+        second_weapon_punkt.connect(self.player.change_weapons)
+
         self.level_x, level_y = self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
@@ -368,7 +389,30 @@ class GameSpace:
         if self.pause_status is True:
             return
         tick = self.clock.tick()
-        self.player_group.update(tick)
+        self.player_group.update(tick)  # Обновление персонажа
+
+        # Обновление интерфейса ================================================
+        cur_weapon_punkt = self.get_punkt(8)
+        second_weapon_punkt = self.get_punkt(9)
+
+        image_cur_weapon = pygame.Surface(size=cur_weapon_punkt.get_size())
+        image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
+
+        cur_weapon = self.player.things['cur_weapon']
+        second_weapon = self.player.things['second_weapon']
+
+        pygame.draw.rect(image_cur_weapon, pygame.color.Color('green'), (0, 0, *cur_weapon_punkt.get_size()), 2)
+        pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()), 2)
+
+        if cur_weapon is not None:
+            image_cur_weapon.blit(cur_weapon.image)
+        if second_weapon is not None:
+            image_second_weapon.blit(second_weapon.image)
+
+        cur_weapon_punkt.set_image(image_cur_weapon)
+        second_weapon_punkt.set_image(image_second_weapon)
+        # ======================================================================
+
         self.camera.update(self.player)
         for sprite in self.all_sprites:
             self.camera.apply(sprite)
@@ -637,18 +681,26 @@ class BaseHero(pygame.sprite.Sprite):
         self._energy_efficiency = 1  # Энергоэфективность
         self._duration = 1  # Длительность
 
+        print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
+
     def attack(self, pos):
+        print(f'{self.__class__.__name__}().attack(pos={pos})') if DEBUG_INFO else None
         weapon = self.things.get('cur_weapon')
         if weapon is None:
             return
         else:
             weapon.attack(pos)
 
-    def set_pos(self, x, y):  # Установка позиции
+    def set_pos(self, x, y):
+        '''Установка позиции'''
+        print(f'{self.__class__}.set_pos(x={x}, y={y})') if DEBUG_INFO else None
         self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
                                                                self.gamespace.size_cell * y)
 
-    def half_damage(self, damage):  # Получение урона
+
+    def half_damage(self, damage):
+        '''Получение урона'''
+        print(f'{self.__class__}.half_damge(damage={damage})') if DEBUG_INFO else None
         damage *= (self.armor() / (self.armor() + 300))  # Истинный полученный урон
         if self.shields - damage < 0:
             damage -= self.shields
@@ -657,11 +709,15 @@ class BaseHero(pygame.sprite.Sprite):
         else:
             self.shields -= damage
 
-    def change_weapons(self):  # Смена оружия
+    def change_weapons(self):
+        '''Смена оружия'''
+        print(f'{self.__class__}.change_weapons()') if DEBUG_INFO else None
         self.things['cur_weapon'], self.things['second_weapon'] = (self.things['second_weapon'],
                                                                    self.things['cur_weapon'])
 
     def take_thing(self, pos):
+        '''Подбор вещи'''
+        print(f'{self.__class__}.take_thing(pos={pos})') if DEBUG_INFO else None
         thing = None
         for elem in self.gamespace.items_group.sprites():
             if elem.rect.collidepoint(pos):
@@ -719,8 +775,7 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
                                        (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet, 10, 1)
-        self._sprint_speed = 2
-        print(f'Player(x={x}, y={y}) create True') if DEBUG_INFO else None
+        self._sprint_speed = 20
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()
@@ -778,7 +833,7 @@ class Wall(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(space.game.load_image('wall\wall.jpg'), (space.size_cell, space.size_cell))
         # Создание прямоукольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
-        print(f'Wall(x={x}, y={y}) create True') if DEBUG_INFO else None
+        print(f'create Wall(x={x}, y={y})') if DEBUG_INFO else None
 
 
 class Tile(pygame.sprite.Sprite):
@@ -790,7 +845,7 @@ class Tile(pygame.sprite.Sprite):
                                             (space.size_cell, space.size_cell))
         # Создание прямоугольника
         self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
-        print(f'Tile(x={x}, y={y}) create True') if DEBUG_INFO else None
+        print(f'create Tile(x={x}, y={y})') if DEBUG_INFO else None
 
 
 class Camera:
