@@ -53,7 +53,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.spinBoxY, 2, 2, 1, 1)
         self.slider_volume_music = QtWidgets.QSlider(self.centralwidget)
         self.slider_volume_music.setMaximum(100)
-        self.slider_volume_music.setProperty("value", 50)
+        self.slider_volume_music.setProperty("value", 10)
         self.slider_volume_music.setOrientation(QtCore.Qt.Horizontal)
         self.slider_volume_music.setObjectName("slider_volume_music")
         self.gridLayout.addWidget(self.slider_volume_music, 1, 1, 1, 2)
@@ -86,7 +86,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Settings Game"))
-        self.label_music.setText(_translate("MainWindow", "Music"))
+        self.label_music.setText(_translate("MainWindow", "Music .o0"))
         self.label_matrix.setText(_translate("MainWindow", "Matrix (x, y)"))
         self.btn_close.setText(_translate("MainWindow", "cancel"))
         self.btn_save.setText(_translate("MainWindow", "save"))
