@@ -50,9 +50,6 @@ class GameExample:
         self.mode = MODE_MENU  # Переключатель между режимами меню MODE_MENU / игра MODE_GAME / настройки MODE_SETTINGS
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
 
-        # Центрирование окна
-        self.center()
-
     def mainloop(self):
         ''' Главный цикл программы '''
         print('\n-----Game started------') if DEBUG_INFO else None
@@ -133,9 +130,6 @@ class GameExample:
                          show_background=False, color_text=_Color('red'), number=4,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
 
-        image = pygame.Surface(size=btn_exit.get_size())
-        btn_exit.set_image(image)
-
         self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit)  # Добавление пунктов
 
     def load_game_space(self):
@@ -150,7 +144,7 @@ class GameExample:
         self.game_space = GameSpace(self)
 
         btn_exit = Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
-                         show_background=True, color_text=_Color('yellow'), number=5,
+                         show_background=False, color_text=_Color('yellow'), number=5,
                          font=_SysFont('gabriola', self.height // 20), func=self.open_menu)
 
         btn_pause = Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
