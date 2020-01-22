@@ -167,23 +167,30 @@ class GameExample:
                                     number=9)  # func=self.game_space.player.change_weapons
 
         size = (int(self.width * 0.2), int(self.height * 0.05))
-        label_health = Punkt(text='Health', pos=(int(self.width * 0.78), int(self.height * 0.8)), size=size,
+        label_health = Punkt(text='Health: 000', pos=(int(self.width * 0.78), int(self.height * 0.8)), size=size,
                              font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
                              color_text=_Color('white'), color=(60, 60, 60),
                              show_background=True, number=10)
         label_health.max_health = 0
 
-        label_shields = Punkt(text='Shields', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1]), size=size,
-                              font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
+        label_shields = Punkt(text='Shields: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1]),
+                              size=size, font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
                               color_text=_Color('white'), color=(60, 60, 60),
                               show_background=True, number=11)
         label_shields.max_shields = 0
 
-        label_armor = Punkt(text='Armor: 0000', pos=(int(self.width * 0.85), int(self.width * 0.05)), size=-1,
-                            font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False, show_background=False,
-                            number=12, color_text=_Color('white'))
+        label_enegy = Punkt(text='Energy: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1] * 2),
+                            size=(size[0], size[1] // 2), color=(60, 60, 60), color_text=_Color('white'),
+                            show_background=True, number=12, bolden=False)
+        label_enegy.max_energy = 0
 
-        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon, label_armor,
+        label_armor = Punkt(text='Armor: 00000', pos=(int(self.width * 0.85), int(self.width * 0.05)), size=-1,
+                            font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False, show_background=False,
+                            number=13, color_text=_Color('white'))
+
+
+
+        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon, label_armor, label_enegy,
                                    label_second_weapon, label_health, label_shields)  # Добавление пунктов
 
     def mouse_press_event(self, event):
@@ -393,6 +400,9 @@ class GameSpace:
         shield_punkt = self.get_punkt(11)
         shield_punkt.max_shields = self.player.shields
 
+        energy_punkt = self.get_punkt(12)
+        energy_punkt.max_energy = self.player.energy
+
         self.level_x, level_y = self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
@@ -406,6 +416,7 @@ class GameSpace:
         '''Заканчивает игру'''
         print('Game.Space.finish_game()') if DEBUG_INFO else None
         self.game.set_pause()
+        print(count)
         # Что то надо туть сделать
 
     def update(self):
@@ -414,8 +425,6 @@ class GameSpace:
             return
         tick = self.clock.tick()
         self.player_group.update(tick)  # Обновление персонажа
-
-        # self.player.half_damage(1)
 
         # Обновление интерфейса ================================================
         # Текущее оружие
@@ -443,18 +452,29 @@ class GameSpace:
                          (0, 0, image_health.get_width() * (self.player.health / health_punkt.max_health),
                           image_health.get_height()))
         health_punkt.set_image(image_health)
+        health_punkt.set_text(f'Health: {round(self.player.health)}')
 
         # Полоска щитов
-        shield_punkt = self.get_punkt(11)
-        image_shield = pygame.Surface(size=shield_punkt.get_size())
-        pygame.draw.rect(image_shield, pygame.color.Color('blue'),
-                         (0, 0, image_shield.get_width() * (self.player.shields / shield_punkt.max_shields),
-                          image_shield.get_height()))
-        shield_punkt.set_image(image_shield)
+        shields_punkt = self.get_punkt(11)
+        image_shields = pygame.Surface(size=shields_punkt.get_size())
+        pygame.draw.rect(image_shields, pygame.color.Color('blue'),
+                         (0, 0, image_shields.get_width() * (self.player.shields / shields_punkt.max_shields),
+                          image_shields.get_height()))
+        shields_punkt.set_image(image_shields)
+        shields_punkt.set_text(f'Shields: {round(self.player.shields)}')
+
+        # Полоска энергии
+        energy_punkt = self.get_punkt(12)
+        image_energy = pygame.Surface(size=energy_punkt.get_size())
+        pygame.draw.rect(image_energy, pygame.color.Color('#C0C0C0'),
+                          (0, 0, image_energy.get_width() * (self.player.energy / energy_punkt.max_energy),
+                           image_energy.get_height()))
+        energy_punkt.set_image(image_energy)
+        energy_punkt.set_text(f'Energy: {round(self.player.energy)}')
 
         # Показатель брони
-        armor_punkt = self.get_punkt(12)
-        armor_punkt.set_text(f'Armor: {self.player.armor()}')
+        armor_punkt = self.get_punkt(13)
+        armor_punkt.set_text(f'Armor: {round(self.player.armor())}')
         # ======================================================================
 
         self.camera.update(self.player)
@@ -715,7 +735,7 @@ class BaseHero(pygame.sprite.Sprite):
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
         self.sight = 'right'
-        self._armor = 0  # Броня
+        self._armor = 1  # Броня
         self.health = 100  # Здоровье
         self._sprint_speed = 2  # Скорость спринта
         self.shields = 100  # Щиты
