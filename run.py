@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 from win32api import GetSystemMetrics
+from random import randint as rd
 
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
@@ -156,7 +157,7 @@ class GameExample:
                             font=_SysFont(None, self.height // 2))
         label_pause.hide()
 
-        size = tuple([int(self.width * 0.05)] * 2)
+        size = tuple([int(self.height * 0.14)] * 2)
         label_cur_weapon = Punkt(text='test', pos=(int(self.width * 0.05), int(self.height * 0.6)),
                                  size=size, show_background=False,
                                  number=8)  # func=self.game_space.player.change_weapons
@@ -165,8 +166,25 @@ class GameExample:
                                     size=size, show_background=False,
                                     number=9)  # func=self.game_space.player.change_weapons
 
-        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
-                                   label_second_weapon)  # Добавление пунктов
+        size = (int(self.width * 0.2), int(self.height * 0.05))
+        label_health = Punkt(text='Health', pos=(int(self.width * 0.78), int(self.height * 0.8)), size=size,
+                             font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
+                             color_text=_Color('white'), color=(60, 60, 60),
+                             show_background=True, number=10)
+        label_health.max_health = 0
+
+        label_shields = Punkt(text='Shields', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1]), size=size,
+                              font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
+                              color_text=_Color('white'), color=(60, 60, 60),
+                              show_background=True, number=11)
+        label_shields.max_shields = 0
+
+        label_armor = Punkt(text='Armor: 0000', pos=(int(self.width * 0.85), int(self.width * 0.05)), size=-1,
+                            font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False, show_background=False,
+                            number=12, color_text=_Color('white'))
+
+        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon, label_armor,
+                                   label_second_weapon, label_health, label_shields)  # Добавление пунктов
 
     def mouse_press_event(self, event):
         '''События мыши'''
@@ -364,10 +382,16 @@ class GameSpace:
         self.player = Player(self, 0, 0)
 
         cur_weapon_punkt = self.get_punkt(8)
-        second_weapon_punkt = self.get_punkt(9)
-
         cur_weapon_punkt.connect(self.player.change_weapons)
+
+        second_weapon_punkt = self.get_punkt(9)
         second_weapon_punkt.connect(self.player.change_weapons)
+
+        health_punkt = self.get_punkt(10)
+        health_punkt.max_health = self.player.health
+
+        shield_punkt = self.get_punkt(11)
+        shield_punkt.max_shields = self.player.shields
 
         self.level_x, level_y = self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
@@ -391,26 +415,46 @@ class GameSpace:
         tick = self.clock.tick()
         self.player_group.update(tick)  # Обновление персонажа
 
+        # self.player.half_damage(1)
+
         # Обновление интерфейса ================================================
+        # Текущее оружие
         cur_weapon_punkt = self.get_punkt(8)
-        second_weapon_punkt = self.get_punkt(9)
-
         image_cur_weapon = pygame.Surface(size=cur_weapon_punkt.get_size())
-        image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
-
         cur_weapon = self.player.things['cur_weapon']
-        second_weapon = self.player.things['second_weapon']
-
         pygame.draw.rect(image_cur_weapon, pygame.color.Color('green'), (0, 0, *cur_weapon_punkt.get_size()), 2)
-        pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()), 2)
-
         if cur_weapon is not None:
             image_cur_weapon.blit(cur_weapon.image)
+        cur_weapon_punkt.set_image(image_cur_weapon)
+
+        # Второе оружие
+        second_weapon_punkt = self.get_punkt(9)
+        image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
+        second_weapon = self.player.things['second_weapon']
+        pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()), 2)
         if second_weapon is not None:
             image_second_weapon.blit(second_weapon.image)
-
-        cur_weapon_punkt.set_image(image_cur_weapon)
         second_weapon_punkt.set_image(image_second_weapon)
+
+        # Полоска здоровья
+        health_punkt = self.get_punkt(10)
+        image_health = pygame.Surface(size=health_punkt.get_size())
+        pygame.draw.rect(image_health, pygame.color.Color('red'),
+                         (0, 0, image_health.get_width() * (self.player.health / health_punkt.max_health),
+                          image_health.get_height()))
+        health_punkt.set_image(image_health)
+
+        # Полоска щитов
+        shield_punkt = self.get_punkt(11)
+        image_shield = pygame.Surface(size=shield_punkt.get_size())
+        pygame.draw.rect(image_shield, pygame.color.Color('blue'),
+                         (0, 0, image_shield.get_width() * (self.player.shields / shield_punkt.max_shields),
+                          image_shield.get_height()))
+        shield_punkt.set_image(image_shield)
+
+        # Показатель брони
+        armor_punkt = self.get_punkt(12)
+        armor_punkt.set_text(f'Armor: {self.player.armor()}')
         # ======================================================================
 
         self.camera.update(self.player)
@@ -700,8 +744,9 @@ class BaseHero(pygame.sprite.Sprite):
 
     def half_damage(self, damage):
         '''Получение урона'''
-        print(f'{self.__class__}.half_damge(damage={damage})') if DEBUG_INFO else None
-        damage *= (self.armor() / (self.armor() + 300))  # Истинный полученный урон
+        print(f'{self.__class__}.half_damge(damage={damage}, ', end='') if DEBUG_INFO else None
+        damage -= damage * (self.armor() / (self.armor() + 300))  # Истинный полученный урон
+        print(f'true_damage={damage})') if DEBUG_INFO else None
         if self.shields - damage < 0:
             damage -= self.shields
             self.shields = 0
@@ -775,7 +820,6 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
                                        (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet, 10, 1)
-        self._sprint_speed = 20
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()
