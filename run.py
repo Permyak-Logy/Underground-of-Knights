@@ -17,36 +17,30 @@ class GameExample:
         '''Инициализация'''
         print('init Game') if DEBUG_INFO else None
         pygame.init()
+
         # Создание переменной с функцианалом для музыки
         self.music = pygame.mixer.music
 
         # Загрузка данных настроек и их обновление
+        # Они включают первичную установку режима (полноэкранный или оконный),
+        # размеров экрана, загрузку меню и игрового пространства,
+        # установка громкости звука
         self.update_settings()
 
-        # Скрытие курсора
-        pygame.mouse.set_visible(False)
-
-        # Инициализация разрешения окна
-        self.size = self.width, self.height = self.data_settings['matrix']
-
-        # Инициализация режима экрана и главного кадра игры
-        self.set_mode_display(self.data_settings['fullscreen'])
-
         # Установка титульного имени окна
-        pygame.display.set_caption('Soul Knight Demo')
+        pygame.display.set_caption('Knights')
 
         # Установка иконки
         pygame.display.set_icon(self.load_image('icon.png'))
 
-        # Загрузка меню
-        self.load_menu()
-
-        # Загруска игрового пространства
-        self.load_game_space()
+        # Скрытие курсора
+        pygame.mouse.set_visible(False)
 
         # Некоторые переменныне в игре
         self.mode = None  # Режим окна
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
+
+
 
         self.open_menu()
 
@@ -83,8 +77,26 @@ class GameExample:
             pygame.display.flip()
 
     def update_settings(self):
+        print(f'{self.__class__}.update_settings()') if DEBUG_INFO else None
+        # Загрузка настроек
         self.data_settings = self.load_settings()
+
+        # Установка громкости музыки
         self.music.set_volume(self.data_settings['volume'])
+
+        # Инициализация разрешения окна
+        self.size = self.width, self.height = self.data_settings['matrix']
+
+        # Инициализация режима экрана и главного кадра игры
+        self.set_mode_display(self.size, self.data_settings['fullscreen'])
+
+        # Загрузка меню
+        self.load_menu()
+
+        # Загруска игрового пространства
+        self.load_game_space()
+
+        print(self.size)
 
     @staticmethod
     def load_settings():
@@ -242,22 +254,26 @@ class GameExample:
         app.exec_()
         for _ in pygame.event.get():
             pass
+        if not pygame.display.get_active():
+            pygame.display.iconify()
         self.update_settings()
         # self.music.unpause()
+
 
     def open_guide(self):
         '''Открывает руководство'''
         print('GameExample.open_guide()') if DEBUG_INFO else None
 
-    def set_mode_display(self, bool_full_screen):
+    def set_mode_display(self, size, bool_full_screen):
         '''Устанавливает полноэкранный и неполноэкранный режим'''
+        print(f'set mode display {size}')
         if bool_full_screen:
-            self.main_screen = pygame.display.set_mode(self.size,
+            self.main_screen = pygame.display.set_mode(size,
                                                        pygame.HWSURFACE |
                                                        pygame.DOUBLEBUF |
                                                        pygame.FULLSCREEN)
         else:
-            self.main_screen = pygame.display.set_mode(self.size)
+            self.main_screen = pygame.display.set_mode(size)
 
     def set_pause(self):
         '''Устанавливает паузу в GameSpace'''
@@ -291,7 +307,7 @@ class GameExample:
         '''Выход из игры, и завершение главного цикла'''
         print('GameExample.close()') if DEBUG_INFO else None
         pygame.quit()
-        print('-----Game closed-----')
+        print('-----Game closed-----') if DEBUG_INFO else None
         sys.exit()
 
 
