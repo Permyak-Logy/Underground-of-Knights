@@ -84,10 +84,10 @@ class GameExample:
 
     @staticmethod
     def load_image(name, colorkey=None):
-        """
+        '''
         Возвращает картинку с именем name. Если есть colorkey, то у картинки делается фон прозрачным.
         Если colorkey == -1 то берётся цвет из самого верхнего угла картинки, иначе ...
-        """
+        '''
         fullname = os.path.join('data\images', name)
         image = pygame.image.load(fullname).convert()
 
@@ -652,15 +652,15 @@ class Punkt:
         self.size = self.width, self.height = size
 
     def show(self):
-        """Показать виджет"""
+        '''Показать виджет'''
         self.isshowed = True
 
     def hide(self):
-        """Скрыть виджет"""
+        '''Скрыть виджет'''
         self.isshowed = False
 
     def connect(self, func):
-        """Подключить функцию"""
+        '''Подключить функцию'''
         self.func = func
 
     def draw(self, screen, ispressed=False):
