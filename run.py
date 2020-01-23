@@ -96,8 +96,6 @@ class GameExample:
         # Загруска игрового пространства
         self.load_game_space()
 
-        print(self.size)
-
     @staticmethod
     def load_settings():
         result = {}
@@ -309,14 +307,12 @@ class GameExample:
         self.update_settings()
         # self.music.unpause()
 
-
     def open_guide(self):
         '''Открывает руководство'''
         print(f'{self.__class__}.open_guide()') if DEBUG_INFO else None
 
     def set_mode_display(self, size, bool_full_screen):
         '''Устанавливает полноэкранный и неполноэкранный режим'''
-        print(f'set mode display {size}')
         if bool_full_screen:
             self.main_screen = pygame.display.set_mode(size,
                                                        pygame.HWSURFACE |
