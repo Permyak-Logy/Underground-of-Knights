@@ -6,7 +6,7 @@ from random import randint as rd
 
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
-FULL_SCREEN = True
+FULL_SCREEN = False
 
 
 class GameExample:
@@ -111,26 +111,28 @@ class GameExample:
         # Пункты меню
         self.menu = Menu(self)  # Создание меню
 
+        # Надпись названия игры
         label_title = Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
                             show_background=False, color_text=_Color('white'), number=0,
                             font=_SysFont('gabriola', self.height // 10), bolden=False)
-
+        # Кнопка "Играть"
         btn_play = Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
                          show_background=False, color_text=_Color('green'), number=1,
                          font=_SysFont('gabriola', self.height // 20), func=self.start_game)
-
+        # Кнопка "Настройки"
         btn_settings = Punkt(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
                              show_background=False, color_text=_Color('white'), number=2,
                              font=_SysFont('gabriola', self.height // 20), func=self.open_settings)
-
+        # Кнопка "Руководство"
         btn_guide = Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
                           show_background=False, color_text=_Color('white'), number=3,
                           font=_SysFont('gabriola', self.height // 20), func=self.open_guide)
-
+        # Кнопка "Выход"
         btn_exit = Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
                          show_background=False, color_text=_Color('red'), number=4,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
 
+        # Добавление пунктов в меню
         self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit)  # Добавление пунктов
 
     def load_game_space(self):
@@ -144,50 +146,56 @@ class GameExample:
         # Создание игрового пространства
         self.game_space = GameSpace(self)
 
+        # Кнопка "Exit"
         btn_exit = Punkt(text='Exit', pos=(int(self.width * 0.01), int(self.height * 0.01)), size=-1,
                          show_background=False, color_text=_Color('yellow'), number=5,
                          font=_SysFont('gabriola', self.height // 20), func=self.open_menu)
-
+        # Кнопка "Pause"
         btn_pause = Punkt(text='Pause', pos=(int(self.width * 0.01), int(self.height * 0.07)), size=-1,
                           show_background=False, color_text=_Color('yellow'), number=6,
                           font=_SysFont('gabriola', self.height // 20), func=self.set_pause)
-
+        # Изображение "PAUSE"
         label_pause = Punkt(text='PAUSE', pos=(int(self.width * 0.2), int(self.height * 0.4)), size=-1,
                             show_background=False, color_text=_Color('blue'), number=7, bolden=False,
                             font=_SysFont(None, self.height // 2))
         label_pause.hide()
 
+        # Размеры Punkt у элементов отображения текущего и вторичного оружия
         size = tuple([int(self.height * 0.14)] * 2)
+
+        # Изображение текущего оружия
         label_cur_weapon = Punkt(text='test', pos=(int(self.width * 0.05), int(self.height * 0.6)),
                                  size=size, show_background=False,
-                                 number=8)  # func=self.game_space.player.change_weapons
-
+                                 number=8)  # func=self.game_space.player.change_weapons  # Привязывается после new_game
+        # Изображение второго оружия
         label_second_weapon = Punkt(text='test2', pos=(int(self.width * 0.05), int(self.height * 0.75)),
                                     size=size, show_background=False,
                                     number=9)  # func=self.game_space.player.change_weapons
 
+        # Размеры полосок здоровья и щитов
         size = (int(self.width * 0.2), int(self.height * 0.05))
+        # Полоска здоровья
         label_health = Punkt(text='Health: 000', pos=(int(self.width * 0.78), int(self.height * 0.8)), size=size,
                              font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
                              color_text=_Color('white'), color=(60, 60, 60),
                              show_background=False, number=10)
         label_health.max_health = 0
-
+        # Полоска щитов
         label_shields = Punkt(text='Shields: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1]),
                               size=size, font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
                               color_text=_Color('white'), color=(60, 60, 60),
                               show_background=False, number=11)
         label_shields.max_shields = 0
-
+        # Полоска энергии
         label_enegy = Punkt(text='Energy: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1] * 2),
                             size=(size[0], size[1] // 2), color=(60, 60, 60), color_text=_Color('black'),
                             show_background=False, number=12, bolden=False)
         label_enegy.max_energy = 0
-
+        # Показатель брони
         label_armor = Punkt(text='Armor: 00000', pos=(int(self.width * 0.85), int(self.width * 0.05)), size=-1,
                             font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False, show_background=False,
                             number=13, color_text=_Color('white'))
-
+        # Показатель скорости бега
         label_sprint_speed = Punkt(text='Sprint: 0000', font=_SysFont('gabriola', int(self.height * 0.05)),
                                    pos=(int(self.width * 0.85), int(self.width * 0.05 + label_armor.get_size()[1])),
                                    bolden=False, show_background=False, number=14, color_text=_Color('white'))
@@ -198,13 +206,15 @@ class GameExample:
 
     def mouse_press_event(self, event):
         '''События мыши'''
+        print(f'{self.__class__}.mouse_press_event()') if DEBUG_INFO else None
         if self.mode == MODE_MENU:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Проверяет элементы после нажатия мышкой
+                # Проверяет элементы после нажатия мышкой кнопкой "1"
                 self.menu.check_on_press_punkts(event.pos)
 
         if self.mode == MODE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Проверяет элементы после нажатия мышкой кнопкой "1"
                 if self.game_space.check_on_press_punkts(event.pos):
                     pass
                 elif self.game_space.pause_status:
@@ -216,6 +226,7 @@ class GameExample:
 
     def key_press_event(self, event):
         '''События клавиатуры'''
+        print(f'{self.__class__}.key_press_event()') if DEBUG_INFO else None
         if self.mode == MODE_GAME:
             if event.key == pygame.K_p:
                 if self.game_space.pause_status:
@@ -224,41 +235,41 @@ class GameExample:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
                 self.open_menu()
-            elif self.game_space.pause_status:
-                self.unset_pause()
+            elif event.key == pygame.K_f:
+                self.game_space.player.change_weapons()
 
     def start_game(self):
         '''Начать игру'''
-        print('GameExample.start_game()') if DEBUG_INFO else None
-        self.mode = MODE_GAME
-        self.game_space.new_game()
-        self.unset_pause()
+        print(f'{self.__class__}.start_game()') if DEBUG_INFO else None
+        self.mode = MODE_GAME  # Установка режима MODE_GAME
+        self.game_space.new_game()  # Запуск новой игры
+        self.unset_pause()  # Убирание паузы
         self.menu.music_start()
 
     def open_menu(self):
         '''Открывает меню'''
-        print('GameExample.open_menu()') if DEBUG_INFO else None
-        self.mode = MODE_MENU
-        self.set_pause()
+        print(f'{self.__class__}.open_menu()') if DEBUG_INFO else None
+        self.mode = MODE_MENU  # Установка режима MODE_MENU
+        self.set_pause()  # Установка паузы
         self.menu.music_start(True)
 
     def open_settings(self):
         '''Открывает настройки'''
-        print('GameExample.open_settings()') if DEBUG_INFO else None
+        print(f'{self.__class__}.open_settings()') if DEBUG_INFO else None
 
     def open_guide(self):
         '''Открывает руководство'''
-        print('GameExample.open_guide()') if DEBUG_INFO else None
+        print(f'{self.__class__}.open_guide()') if DEBUG_INFO else None
 
     def set_pause(self):
-        print('GameSpace.set_pause()') if DEBUG_INFO else None
+        print(f'{self.__class__}.set_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = True
         self.game_space.get_punkt(5).hide()
         self.game_space.get_punkt(6).hide()
         self.game_space.get_punkt(7).show()
 
     def unset_pause(self):
-        print('GameExample.unset_pause()') if DEBUG_INFO else None
+        print(f'{self.__class__}.unset_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = False
         self.game_space.get_punkt(5).show()
         self.game_space.get_punkt(6).show()
@@ -266,7 +277,7 @@ class GameExample:
 
     def start_screen_opening(self):
         '''Зашрузочная заставка'''
-        print('GameExample.start_screen_opening()') if DEBUG_INFO else None
+        print(f'{self.__class__}.start_screen_opening()') if DEBUG_INFO else None
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -278,7 +289,7 @@ class GameExample:
     @staticmethod
     def terminate():
         '''Выход из игры, и завершение главного цикла'''
-        print('GameExample.close()') if DEBUG_INFO else None
+        print('terminate()') if DEBUG_INFO else None
         pygame.quit()
         print('-----Game closed-----')
         sys.exit()
@@ -322,9 +333,11 @@ class Menu:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
 
     def add_punkt(self, punkt):
+        '''Добавление 1 пункта'''
         self.punkts.append(punkt)
 
     def add_punkts(self, *punkts):
+        '''Добавление нескольких пунктов'''
         self.punkts += list(punkts)
 
     def get_punkt(self, number):
@@ -371,9 +384,11 @@ class GameSpace:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
 
     def add_punkt(self, punkt):
+        '''Добавляет 1 пункт'''
         self.punkts.append(punkt)
 
     def add_punkts(self, *punkts):
+        '''Добавляет несколько пунктов'''
         self.punkts += list(punkts)
 
     def check_on_press_punkts(self, pos):
@@ -385,31 +400,35 @@ class GameSpace:
 
     def new_game(self):
         '''Сбрасывает предыдущий прогресс и данные'''
-        print('GameSpace.new_game()') if DEBUG_INFO else None
+        print(f'{self.__class__}.new_game()') if DEBUG_INFO else None
 
         self.levels.clear()
         self.load_levels('test')
         self.player = Player(self, 0, 0)
 
-        cur_weapon_punkt = self.get_punkt(8)
+        # Подключение функций персонажа и его показателей к пунктам:
+        cur_weapon_punkt = self.get_punkt(8)  # Текущее оружие
         cur_weapon_punkt.connect(self.player.change_weapons)
 
-        second_weapon_punkt = self.get_punkt(9)
+        second_weapon_punkt = self.get_punkt(9)  # Второе оружие
         second_weapon_punkt.connect(self.player.change_weapons)
 
-        health_punkt = self.get_punkt(10)
+        health_punkt = self.get_punkt(10)  # Полоска здоровья
         health_punkt.max_health = self.player.health
 
-        shield_punkt = self.get_punkt(11)
+        shield_punkt = self.get_punkt(11)  # Полоска щитов
         shield_punkt.max_shields = self.player.shields
 
-        energy_punkt = self.get_punkt(12)
+        energy_punkt = self.get_punkt(12)  # Полоска энергии
         energy_punkt.max_energy = self.player.energy
+
+        self.update_interface()  # Обновление интерфейса
 
         self.level_x, level_y = self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
     def get_next_level(self):
+        '''Получение следующего уровня'''
         try:
             return self.levels.pop(0)
         except IndexError:
@@ -417,38 +436,35 @@ class GameSpace:
 
     def finish_game(self, message=None):
         '''Заканчивает игру'''
-        print('Game.Space.finish_game()') if DEBUG_INFO else None
+        print(f'{self.__class__}.finish_game()') if DEBUG_INFO else None
         self.game.open_menu()
 
-    def update(self):
-        '''Обновляет данные игры'''
-        if self.pause_status is True:
-            return
-
-        tick = self.clock.tick()
-        self.player_group.update(tick)  # Обновление персонажа
-
-        # if self.pause_status is True:
-        #     return
-
-        # Обновление интерфейса ================================================
+    def update_interface(self):
+        '''обновление боевого интерфейса'''
         # Текущее оружие
         cur_weapon_punkt = self.get_punkt(8)
-        image_cur_weapon = pygame.Surface(size=cur_weapon_punkt.get_size())
         cur_weapon = self.player.things['cur_weapon']
-        pygame.draw.rect(image_cur_weapon, pygame.color.Color('green'), (0, 0, *cur_weapon_punkt.get_size()), 2)
         if cur_weapon is not None:
+            image_cur_weapon = pygame.Surface(size=cur_weapon_punkt.get_size())
+            pygame.draw.rect(image_cur_weapon, pygame.color.Color('green'), (0, 0, *cur_weapon_punkt.get_size()), 2)
             image_cur_weapon.blit(cur_weapon.image)
-        cur_weapon_punkt.set_image(image_cur_weapon)
+            cur_weapon_punkt.set_image(image_cur_weapon)
+            cur_weapon_punkt.show()
+        else:
+            cur_weapon_punkt.hide()
 
         # Второе оружие
         second_weapon_punkt = self.get_punkt(9)
-        image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
         second_weapon = self.player.things['second_weapon']
-        pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()), 2)
         if second_weapon is not None:
+            image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
+            pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()),
+                             2)
             image_second_weapon.blit(second_weapon.image)
-        second_weapon_punkt.set_image(image_second_weapon)
+            second_weapon_punkt.set_image(image_second_weapon)
+            second_weapon_punkt.show()
+        else:
+            second_weapon_punkt.hide()
 
         # Полоска здоровья
         health_punkt = self.get_punkt(10)
@@ -486,8 +502,17 @@ class GameSpace:
 
         sprint_punkt = self.get_punkt(14)
         sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed())}')
-        # ======================================================================
 
+    def update(self):
+        '''Обновляет данные игры'''
+        if self.pause_status is True:
+            return
+
+        tick = self.clock.tick()  # Получения момента времени
+        self.player_group.update(tick)  # Обновление персонажа
+
+        self.update_interface()  # Обновление интерфейса
+        # Обновление камеры
         self.camera.update(self.player)
         for sprite in self.all_sprites:
             self.camera.apply(sprite)
@@ -509,7 +534,7 @@ class GameSpace:
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
 
-        print('\tFinish generate level')
+        print('\tFinish generate level') if DEBUG_INFO else None
         return x, y
 
     def load_levels(self, directory):
@@ -535,7 +560,7 @@ class GameSpace:
         except FileNotFoundError:
             print('False') if DEBUG_INFO else None
             print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
-            [print([print(row) for row in level]) for level in self.levels]
+            [print([print(row) for row in level]) for level in self.levels] if DEBUG_INFO else None
 
     def empty_sprites(self):
         print('GameSpace.empty_sprites()') if DEBUG_INFO else None
@@ -697,31 +722,38 @@ class Punkt:
 
 class AnimatedSpriteForHero(object):
     def init_animation(self, sheet, columns, rows):
+        # Картинка персонажа в положении покоя
         self.std_image = self.image
-        self.frames_run = []
-        self.cut_sheet(sheet, columns, rows)
-        self.cur_frame = 0
+
+        # Список изображений для анимации бега
+        self.frames_run = self.cut_sheet(sheet, columns, rows)
+        # Текущий кадр
+        self.cur_frame_run = 0
 
     def cut_sheet(self, sheet, columns, rows):
+        '''Разделение доски анимации и возвращение списка кадров'''
+        listen = []
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                                 sheet.get_height() // rows)
         for j in range(rows):
             for i in range(columns):
                 frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames_run.append(sheet.subsurface(pygame.Rect(
+                listen.append(sheet.subsurface(pygame.Rect(
                     frame_location, self.rect.size)))
+        return listen
 
     def update_animation(self, *args):
+        '''Обновление анимации'''
         if args[1] == 1 or (args[1] == 0 and args[2] == 1):
-            self.cur_frame = (self.cur_frame + 5.7 * args[0] / 1000 * args[3] *
-                              len(self.frames_run) / 10) % len(self.frames_run)
-            self.image = self.frames_run[int(self.cur_frame)]
+            self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
+                                  len(self.frames_run) / 10) % len(self.frames_run)
+            self.image = self.frames_run[int(self.cur_frame_run)]
         elif args[1] == -1 or (args[1] == 0 and args[2] == -1):
-            self.cur_frame = (self.cur_frame + 5.7 * args[0] / 1000 * args[3] *
-                              len(self.frames_run) / 10) % len(self.frames_run)
-            self.image = pygame.transform.flip(self.frames_run[int(self.cur_frame)], True, False)
+            self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
+                                  len(self.frames_run) / 10) % len(self.frames_run)
+            self.image = pygame.transform.flip(self.frames_run[int(self.cur_frame_run)], True, False)
         else:
-            self.cur_frame = 0
+            self.cur_frame_run = 0
             self.image = self.std_image
 
 
@@ -737,11 +769,11 @@ class BaseHero(pygame.sprite.Sprite):
 
         self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
-
+        # Радиус подбора предметов
         self.take_radius = space.size_cell
-
+        # Маска
         self.mask = pygame.mask.from_surface(self.image)
-
+        # Предметы персонажа
         self.things = {'cur_weapon': None, 'second_weapon': None,
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
@@ -759,6 +791,7 @@ class BaseHero(pygame.sprite.Sprite):
         print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
 
     def attack(self, pos):
+        '''Атака из текущего оружия'''
         print(f'{self.__class__.__name__}().attack(pos={pos})') if DEBUG_INFO else None
         weapon = self.things.get('cur_weapon')
         if weapon is None:
@@ -835,7 +868,7 @@ class BaseHero(pygame.sprite.Sprite):
         return sum(map(lambda key: self.things[key].duration if self.things.get(key) else 0,
                        self.things.keys())) + self._duration
 
-    def get_moving(self, tick):
+    def get_moving(self, tick):  # Перемещение
         return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
 
 
