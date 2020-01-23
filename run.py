@@ -6,7 +6,7 @@ from random import randint as rd
 
 MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
 DEBUG_INFO = True
-FULL_SCREEN = False
+FULL_SCREEN = True
 
 
 class GameExample:
@@ -170,27 +170,30 @@ class GameExample:
         label_health = Punkt(text='Health: 000', pos=(int(self.width * 0.78), int(self.height * 0.8)), size=size,
                              font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
                              color_text=_Color('white'), color=(60, 60, 60),
-                             show_background=True, number=10)
+                             show_background=False, number=10)
         label_health.max_health = 0
 
         label_shields = Punkt(text='Shields: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1]),
                               size=size, font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False,
                               color_text=_Color('white'), color=(60, 60, 60),
-                              show_background=True, number=11)
+                              show_background=False, number=11)
         label_shields.max_shields = 0
 
         label_enegy = Punkt(text='Energy: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1] * 2),
-                            size=(size[0], size[1] // 2), color=(60, 60, 60), color_text=_Color('white'),
-                            show_background=True, number=12, bolden=False)
+                            size=(size[0], size[1] // 2), color=(60, 60, 60), color_text=_Color('black'),
+                            show_background=False, number=12, bolden=False)
         label_enegy.max_energy = 0
 
         label_armor = Punkt(text='Armor: 00000', pos=(int(self.width * 0.85), int(self.width * 0.05)), size=-1,
                             font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False, show_background=False,
                             number=13, color_text=_Color('white'))
 
+        label_sprint_speed = Punkt(text='Sprint: 0000', font=_SysFont('gabriola', int(self.height * 0.05)),
+                                   pos=(int(self.width * 0.85), int(self.width * 0.05 + label_armor.get_size()[1])),
+                                   bolden=False, show_background=False, number=14, color_text=_Color('white'))
 
-
-        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon, label_armor, label_enegy,
+        self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
+                                   label_armor, label_enegy, label_sprint_speed,
                                    label_second_weapon, label_health, label_shields)  # Добавление пунктов
 
     def mouse_press_event(self, event):
@@ -415,16 +418,18 @@ class GameSpace:
     def finish_game(self, message=None):
         '''Заканчивает игру'''
         print('Game.Space.finish_game()') if DEBUG_INFO else None
-        self.game.set_pause()
-        print(count)
-        # Что то надо туть сделать
+        self.game.open_menu()
 
     def update(self):
         '''Обновляет данные игры'''
         if self.pause_status is True:
             return
+
         tick = self.clock.tick()
         self.player_group.update(tick)  # Обновление персонажа
+
+        # if self.pause_status is True:
+        #     return
 
         # Обновление интерфейса ================================================
         # Текущее оружие
@@ -448,7 +453,8 @@ class GameSpace:
         # Полоска здоровья
         health_punkt = self.get_punkt(10)
         image_health = pygame.Surface(size=health_punkt.get_size())
-        pygame.draw.rect(image_health, pygame.color.Color('red'),
+        image_health.fill(pygame.color.Color('#800000'))
+        pygame.draw.rect(image_health, pygame.color.Color('#FF0000'),
                          (0, 0, image_health.get_width() * (self.player.health / health_punkt.max_health),
                           image_health.get_height()))
         health_punkt.set_image(image_health)
@@ -457,7 +463,8 @@ class GameSpace:
         # Полоска щитов
         shields_punkt = self.get_punkt(11)
         image_shields = pygame.Surface(size=shields_punkt.get_size())
-        pygame.draw.rect(image_shields, pygame.color.Color('blue'),
+        image_shields.fill(pygame.color.Color('#000080'))
+        pygame.draw.rect(image_shields, pygame.color.Color('#0000FF'),
                          (0, 0, image_shields.get_width() * (self.player.shields / shields_punkt.max_shields),
                           image_shields.get_height()))
         shields_punkt.set_image(image_shields)
@@ -466,15 +473,19 @@ class GameSpace:
         # Полоска энергии
         energy_punkt = self.get_punkt(12)
         image_energy = pygame.Surface(size=energy_punkt.get_size())
-        pygame.draw.rect(image_energy, pygame.color.Color('#C0C0C0'),
-                          (0, 0, image_energy.get_width() * (self.player.energy / energy_punkt.max_energy),
-                           image_energy.get_height()))
+        image_energy.fill(pygame.color.Color('#008080'))
+        pygame.draw.rect(image_energy, pygame.color.Color('#00FFFF'),
+                         (0, 0, image_energy.get_width() * (self.player.energy / energy_punkt.max_energy),
+                          image_energy.get_height()))
         energy_punkt.set_image(image_energy)
         energy_punkt.set_text(f'Energy: {round(self.player.energy)}')
 
         # Показатель брони
         armor_punkt = self.get_punkt(13)
         armor_punkt.set_text(f'Armor: {round(self.player.armor())}')
+
+        sprint_punkt = self.get_punkt(14)
+        sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed())}')
         # ======================================================================
 
         self.camera.update(self.player)
@@ -760,7 +771,6 @@ class BaseHero(pygame.sprite.Sprite):
         print(f'{self.__class__}.set_pos(x={x}, y={y})') if DEBUG_INFO else None
         self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
                                                                self.gamespace.size_cell * y)
-
 
     def half_damage(self, damage):
         '''Получение урона'''
