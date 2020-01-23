@@ -3,10 +3,11 @@ import os
 import sys
 from win32api import GetSystemMetrics
 from random import randint as rd
+from settings_launcher import SettingsWindow, QApplication
 
-MODE_MENU, MODE_GAME, MODE_SETTINGS = 0, 1, 2
-DEBUG_INFO = True
-FULL_SCREEN = False
+# Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
+MODE_MENU, MODE_GAME = 0, 1
+DEBUG_INFO = False  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -19,37 +20,29 @@ class GameExample:
         print('init Game') if DEBUG_INFO else None
         pygame.init()
 
-        # Скрытие курсора
-        pygame.mouse.set_visible(False)
+        # Создание переменной с функцианалом для музыки
+        self.music = pygame.mixer.music
 
-        # Инициализация экрана
-        if FULL_SCREEN:
-            # Инициализация размеров окна
-            self.size = self.width, self.height = GetSystemMetrics(0), GetSystemMetrics(1)
-            # Инициализация главного кадра игры
-            self.main_screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF |
-                                                       pygame.FULLSCREEN)
-        else:
-            n = 600
-            self.size = self.width, self.height = n * 2, n
-            # Инициализация главного кадра игры
-            self.main_screen = pygame.display.set_mode(self.size)
+        # Загрузка данных настроек и их обновление
+        # Они включают первичную установку режима (полноэкранный или оконный),
+        # размеров экрана, загрузку меню и игрового пространства,
+        # установка громкости звука
+        self.update_settings()
 
         # Установка титульного имени окна
-        pygame.display.set_caption('Soul Knight Demo')
+        pygame.display.set_caption('Knights')
 
         # Установка иконки
         pygame.display.set_icon(self.load_image('icon.png'))
 
-        # Загрузка меню
-        self.load_menu()
-
-        # Загруска игрового пространства
-        self.load_game_space()
+        # Скрытие курсора
+        pygame.mouse.set_visible(False)
 
         # Некоторые переменныне в игре
-        self.mode = MODE_MENU  # Переключатель между режимами меню MODE_MENU / игра MODE_GAME / настройки MODE_SETTINGS
+        self.mode = None  # Режим окна
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
+
+        self.open_menu()
 
     def mainloop(self):
         ''' Главный цикл программы '''
@@ -72,6 +65,7 @@ class GameExample:
                 # Рисование меню
                 self.menu.render(self.main_screen)
             if self.mode == MODE_GAME:
+                # Обновление игрового пространства
                 self.game_space.update()
                 # Рисование ирового пространства
                 self.game_space.render(self.main_screen)
@@ -81,6 +75,43 @@ class GameExample:
 
             # Обновление дисплея
             pygame.display.flip()
+
+    def update_settings(self):
+        print(f'{self.__class__}.update_settings()') if DEBUG_INFO else None
+        # Загрузка настроек
+        self.data_settings = self.load_settings()
+
+        # Установка громкости музыки
+        self.music.set_volume(self.data_settings['volume'])
+
+        # Инициализация разрешения окна
+        self.size = self.width, self.height = self.data_settings['matrix']
+
+        # Инициализация режима экрана и главного кадра игры
+        self.set_mode_display(self.size, self.data_settings['fullscreen'])
+
+        # Загрузка меню
+        self.load_menu()
+
+        # Загруска игрового пространства
+        self.load_game_space()
+
+        print(self.size)
+
+    @staticmethod
+    def load_settings():
+        result = {}
+        with open('data\settings data', encoding='utf8') as file:
+            data = file.readlines()
+        for elem in data:
+            key, val = elem.split()
+            if key == 'matrix':
+                result[key] = tuple(map(int, val.split('x')))
+            elif key == 'fullscreen':
+                result[key] = val == 'true'
+            elif key == 'volume':
+                result[key] = float(val)
+        return result
 
     @staticmethod
     def load_image(name, colorkey=None):
@@ -106,6 +137,9 @@ class GameExample:
         _Font = pygame.font.Font
         _SysFont = pygame.font.SysFont
         _Color = pygame.Color
+
+        # Создание меню
+        self.menu = Menu(self)
 
         # fonts = ['consolas', 'cuprum', 'gabriola', ''] # Красивые шрифты
         # Пункты меню
@@ -216,12 +250,16 @@ class GameExample:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # Проверяет элементы после нажатия мышкой кнопкой "1"
                 if self.game_space.check_on_press_punkts(event.pos):
+                    # Проверка на нажатие punkt
                     pass
                 elif self.game_space.pause_status:
+                    # Если пауза то убрать её и больше ничего не делать
                     self.unset_pause()
                 elif self.game_space.player.take_thing(event.pos):
+                    # Проверка на поднятие вещи в позиции event.pos
                     pass
                 else:
+                    # Начать атаку позиции event.pos
                     self.game_space.player.attack(event.pos)
 
     def key_press_event(self, event):
@@ -229,39 +267,66 @@ class GameExample:
         print(f'{self.__class__}.key_press_event()') if DEBUG_INFO else None
         if self.mode == MODE_GAME:
             if event.key == pygame.K_p:
+                # Установка и убирание паузы при нажатии клавиши P
                 if self.game_space.pause_status:
                     self.unset_pause()
                 else:
                     self.set_pause()
             elif event.key == pygame.K_ESCAPE:
+                # Открытие меню при нажатии на Escape
                 self.open_menu()
             elif event.key == pygame.K_f:
                 self.game_space.player.change_weapons()
 
     def start_game(self):
         '''Начать игру'''
-        print(f'{self.__class__}.start_game()') if DEBUG_INFO else None
+        print('GameExample.start_game()') if DEBUG_INFO else None
         self.mode = MODE_GAME  # Установка режима MODE_GAME
-        self.game_space.new_game()  # Запуск новой игры
+        self.game_space.new_game()  # Начало новой игры в game_space
         self.unset_pause()  # Убирание паузы
-        self.menu.music_start()
+        self.music.pause()  # Остановка музыки
 
     def open_menu(self):
         '''Открывает меню'''
-        print(f'{self.__class__}.open_menu()') if DEBUG_INFO else None
+        print('GameExample.open_menu()') if DEBUG_INFO else None
         self.mode = MODE_MENU  # Установка режима MODE_MENU
         self.set_pause()  # Установка паузы
-        self.menu.music_start(True)
+        self.music.load('data\music\main_menu.mp3')
+        self.music.play(-1)
 
     def open_settings(self):
         '''Открывает настройки'''
         print(f'{self.__class__}.open_settings()') if DEBUG_INFO else None
+        # os.startfile('settings launcher.exe')
+        # self.music.pause()
+        app = QApplication(sys.argv)
+        settings_window = SettingsWindow(self)
+        app.exec_()
+        for _ in pygame.event.get():
+            pass
+        if not pygame.display.get_active():
+            pygame.display.iconify()
+        self.update_settings()
+        # self.music.unpause()
+
 
     def open_guide(self):
         '''Открывает руководство'''
         print(f'{self.__class__}.open_guide()') if DEBUG_INFO else None
 
+    def set_mode_display(self, size, bool_full_screen):
+        '''Устанавливает полноэкранный и неполноэкранный режим'''
+        print(f'set mode display {size}')
+        if bool_full_screen:
+            self.main_screen = pygame.display.set_mode(size,
+                                                       pygame.HWSURFACE |
+                                                       pygame.DOUBLEBUF |
+                                                       pygame.FULLSCREEN)
+        else:
+            self.main_screen = pygame.display.set_mode(size)
+
     def set_pause(self):
+        '''Устанавливает паузу в GameSpace'''
         print(f'{self.__class__}.set_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = True
         self.game_space.get_punkt(5).hide()
@@ -269,6 +334,7 @@ class GameExample:
         self.game_space.get_punkt(7).show()
 
     def unset_pause(self):
+        '''Убирает паузу в GameSpace'''
         print(f'{self.__class__}.unset_pause()') if DEBUG_INFO else None
         self.game_space.pause_status = False
         self.game_space.get_punkt(5).show()
@@ -291,7 +357,7 @@ class GameExample:
         '''Выход из игры, и завершение главного цикла'''
         print('terminate()') if DEBUG_INFO else None
         pygame.quit()
-        print('-----Game closed-----')
+        print('-----Game closed-----') if DEBUG_INFO else None
         sys.exit()
 
 
@@ -305,18 +371,6 @@ class Menu:
         background = self.game.load_image('background menu.jpg')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
-        pygame.mixer.music.load('data/music/main_menu.mp3')
-        self.music_start(True, 0.2)
-
-    def music_start(self, start=False, volume=False):
-        # Отвечает за запуск музыки в главном меню
-        if start:
-            pygame.mixer.music.play(-1)
-            # изменение громкости если передан параметр
-            if volume:
-                pygame.mixer.music.set_volume(volume)
-        else:
-            pygame.mixer.music.pause()
 
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатие'''  # Не могу придумать...
@@ -724,7 +778,6 @@ class AnimatedSpriteForHero(object):
     def init_animation(self, sheet, columns, rows):
         # Картинка персонажа в положении покоя
         self.std_image = self.image
-
         # Список изображений для анимации бега
         self.frames_run = self.cut_sheet(sheet, columns, rows)
         # Текущий кадр
@@ -778,7 +831,7 @@ class BaseHero(pygame.sprite.Sprite):
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
         self.sight = 'right'
-        self._armor = 1  # Броня
+        self._armor = 0  # Броня
         self.health = 100  # Здоровье
         self._sprint_speed = 2  # Скорость спринта
         self.shields = 100  # Щиты
