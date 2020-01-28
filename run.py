@@ -580,9 +580,9 @@ class GameSpace:
             for x in range(len(level[y])):
                 obj = level[y][x]
                 if obj != '_' and obj != '#':
-                    Tile(self, x, y)# .add(self.enemies_group)
+                    Tile(self, x, y)
                 if obj == '#':
-                    Wall(self, x, y)#
+                    Wall(self, x, y)
                 if obj == 'e':
                     Enemy(self, x, y).add(self.enemies_group)
                 if obj == '@':
@@ -783,6 +783,8 @@ class AnimatedSpriteForHero(object):
         self.frames_run = self.cut_sheet(sheet, columns, rows)
         # Текущий кадр
         self.cur_frame_run = 0
+        # Взгляд
+        self.sight = [0, 0]
 
     def cut_sheet(self, sheet, columns, rows):
         '''Разделение доски анимации и возвращение списка кадров'''
@@ -799,16 +801,18 @@ class AnimatedSpriteForHero(object):
     def update_animation(self, *args):
         '''Обновление анимации'''
         if args[1] == 1 or (args[1] == 0 and args[2] == 1):
+            self.sight = [args[1], args[2]]
             self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
                                   len(self.frames_run) / 10) % len(self.frames_run)
             self.image = self.frames_run[int(self.cur_frame_run)]
         elif args[1] == -1 or (args[1] == 0 and args[2] == -1):
+            self.sight = [args[1], args[2]]
             self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
                                   len(self.frames_run) / 10) % len(self.frames_run)
             self.image = pygame.transform.flip(self.frames_run[int(self.cur_frame_run)], True, False)
         else:
             self.cur_frame_run = 0
-            self.image = self.std_image
+            self.image = self.std_image if self.sight[0] != -1 else pygame.transform.flip(self.std_image, True, False)
 
 
 class BaseHero(pygame.sprite.Sprite):
@@ -831,7 +835,6 @@ class BaseHero(pygame.sprite.Sprite):
         self.things = {'cur_weapon': None, 'second_weapon': None,
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
-        self.sight = 'right'
         self._armor = 0  # Броня
         self.health = 100  # Здоровье
         self._sprint_speed = 2  # Скорость спринта
@@ -844,14 +847,17 @@ class BaseHero(pygame.sprite.Sprite):
 
         print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
 
-    def attack(self, pos):
+    def attack(self, target):
         '''Атака из текущего оружия'''
-        print(f'{self.__class__.__name__}().attack(pos={pos})') if DEBUG_INFO else None
+        print(f'{self.__class__.__name__}().attack(target={target})') if DEBUG_INFO else None
         weapon = self.things.get('cur_weapon')
         if weapon is None:
             return
         else:
-            weapon.attack(pos)
+            if isinstance(target, self.__class__):
+                weapon.attack((target.rect.x, target.rect.y))
+            elif isinstance(target, tuple):
+                weapon.arrack(target)
 
     def set_pos(self, x, y):
         '''Установка позиции'''
@@ -898,6 +904,10 @@ class BaseHero(pygame.sprite.Sprite):
         self.things[thing.type] = thing
         return True
 
+    def get_distance(self, other):
+        '''Возвращает растояние между self и другого такого же объекта'''
+        return ((self.true_x - other.true_x) ** 2 + (self.true_y - other.true_y) ** 2) ** 0.5
+
     def armor(self):  # Кол-во брони  броня
         return sum(map(lambda key: self.things[key].armor if self.things.get(key) else 0,
                        self.things.keys())) + self._armor
@@ -925,6 +935,42 @@ class BaseHero(pygame.sprite.Sprite):
     def get_moving(self, tick):  # Перемещение
         return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
 
+    def move_up(self, tick):
+        self.true_y -= self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.y = int(self.true_y)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
+
+    def move_down(self, tick):
+        self.true_y += self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.y = int(self.true_y)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.y = self.true_y = sprite_list[0].rect.y - self.rect.size[1]
+
+    def move_left(self, tick):
+        self.true_x -= self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.x = int(self.true_x)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
+
+    def move_right(self, tick):
+        self.true_x += self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.x = int(self.true_x)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
+
 
 class Player(BaseHero, AnimatedSpriteForHero):
     '''
@@ -940,50 +986,28 @@ class Player(BaseHero, AnimatedSpriteForHero):
         self._sprint_speed = 5
 
     def update(self, *args):
-        pressed_keys = pygame.key.get_pressed()
-        move_kx = move_ky = 0
+        pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
+        move_kx = move_ky = 0  # Коэффициэты показывающие куда персонаж сходил
         if self.health <= 0:
             # Если здоровье падает до 0 и меньше то игра заканчивается
             self.gamespace.finish_game(message='Закончились жизни')
-
         if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
             # Движение вправо если нажата клавиша Right или D
-            self.true_x += self.get_moving(args[0])  # Установка новых истенных координат
-            self.rect.x = int(self.true_x)  # Установка новых координат квадрата
-            # Получения списка стен с которыми игрок пересёкся
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                # Если было пересечение то перемещение песонажа на максимально маленькое растояние
-                self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
+            self.move_right(args[0])
             move_kx += 1
-
         if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
             # Движение влево если нажата клавиша Left или A
-            self.true_x -= self.get_moving(args[0])
-            self.rect.x = int(self.true_x)
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
+            self.move_left(args[0])
             move_kx -= 1
-
         if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
             # Движение вверх если нажата клавиша Up или W
-            self.true_y -= self.get_moving(args[0])
-            self.rect.y = int(self.true_y)
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
+            self.move_up(args[0])
             move_ky += 1
-
         if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
             # Движение вниз если нажата клавиша Down или S
-            self.true_y += self.get_moving(args[0])
-            self.rect.y = int(self.true_y)
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                self.rect.y = self.true_y = sprite_list[0].rect.y - self.rect.size[1]
+            self.move_down(args[0])
             move_ky -= 1
-
+        # Обновление анимации
         self.update_animation(args[0], move_kx, move_ky, self.sprint_speed())
 
 
@@ -991,29 +1015,66 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
     '''
     Класс врагов
     '''
+
     def __init__(self, space, x, y, level=None):
-        image = pygame.transform.scale(space.game.load_image('enemy\goblin std.png', -1), (space.size_cell, space.size_cell))
+        image = pygame.transform.scale(space.game.load_image('enemy\goblin std2.png', -1),
+                                       (space.size_cell, space.size_cell))
         super().__init__(space, x, y, space.all_sprites, image=image)
         sheet = pygame.transform.scale(self.gamespace.game.load_image('enemy\\animation run 6x1.png', -1),
                                        (space.size_cell * 6, space.size_cell * 1))
         self.init_animation(sheet, 6, 1)
+        self.turn = []
+
+        self.activity = False
+
+        self.r_detection = space.size_cell * 2
+        self.attack_range = (space.size_cell * 2, space.size_cell * 2.5)
+
         self._sprint_speed = 2
         self.k = 1
 
-    def update(self, *args):
+    def ai(self, tick, target):
+        move_kx = move_ky = 0
+        if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
+            target.half_damage(0.5)
+        elif not self.attack_range[1] > self.get_distance(target):
+            if self.true_x < target.true_x:
+                self.move_right(tick)
+                move_kx += 1
+            if self.true_x > target.true_x:
+                self.move_left(tick)
+                move_kx -= 1
+            if self.true_y < target.true_y:
+                self.move_down(tick)
+                move_ky -= 1
+            if self.true_y > target.true_y:
+                self.move_up(tick)
+                move_ky += 1
+        elif not self.attack_range[0] < self.get_distance(target):
+            if self.true_x < target.true_x:
+                self.move_left(tick)
+                move_kx -= 1
+            if self.true_x > target.true_x:
+                self.move_right(tick)
+                move_kx += 1
+            if self.true_y > target.true_y:
+                self.move_down(tick)
+                move_ky -= 1
+            if self.true_y < target.true_y:
+                self.move_up(tick)
+                move_ky += 1
+        self.update_animation(tick, move_kx, move_ky, self.sprint_speed())
 
-        self.true_x += self.get_moving(args[0]) * self.k  # Установка новых истенных координат
-        self.rect.x = int(self.true_x)  # Установка новых координат квадрата
-        # Получения списка стен с которыми враг пересёкся
-        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-        if sprite_list and self.k == 1:
-            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
-            self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
-            self.k *= -1
-        elif sprite_list and self.k == -1:
-            self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
-            self.k *= -1
-        self.update_animation(args[0], self.k, 0, self.sprint_speed())
+    def update(self, *args):
+        if self.activity:
+            self.ai(args[0], self.gamespace.player)
+        elif self.get_distance(self.gamespace.player) <= self.r_detection:
+            self.activity = True
+        else:
+            for enemy in self.gamespace.enemies_group.sprites():
+                if self.get_distance(enemy) <= self.r_detection and enemy.activity:
+                    self.activity = True
+                    break
 
 
 class Wall(pygame.sprite.Sprite):
