@@ -48,7 +48,7 @@ class GameExample:
         ''' Главный цикл программы '''
         print('\n-----Game started------') if DEBUG_INFO else None
 
-        # self.start_screen_opening()
+        self.start_screen_opening()
         while True:
             # Проверка событий
             for event in pygame.event.get():
@@ -340,12 +340,24 @@ class GameExample:
     def start_screen_opening(self):
         '''Зашрузочная заставка'''
         print(f'{self.__class__}.start_screen_opening()') if DEBUG_INFO else None
-        while self.running:
+        author_PyPLy = self.load_image('PyPLy.png', colorkey=-1)
+        k = 0.5
+        author_PyPLy = pygame.transform.scale(author_PyPLy, (int(author_PyPLy.get_width() * (self.width // 640) * k),
+                                                             int(author_PyPLy.get_height() * (self.height // 360) * k)))
+        i = 0
+        while i <= 1000:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
-
+                    self.terminate()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    return
+                if event.type == pygame.KEYDOWN:
+                    return
             self.main_screen.fill(pygame.color.Color('black'))
+            author_PyPLy.set_alpha(i // 2 if i <= 400 else (200 if i <= 600 else (1000 - i) // 2))
+            self.main_screen.blit(author_PyPLy, (self.width // 2 - author_PyPLy.get_width() // 2,
+                                                 self.height // 2 - author_PyPLy.get_height() // 2))
+            i += 1
             pygame.display.flip()
 
     @staticmethod
