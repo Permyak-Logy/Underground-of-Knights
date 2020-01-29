@@ -8,7 +8,7 @@ from random import randint
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
-DEBUG_INFO = False  # Флаг доп. информации в консоли
+DEBUG_INFO = True  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -73,6 +73,10 @@ class GameExample:
             if pygame.mouse.get_focused():
                 # Отрисовка курсора
                 self.main_screen.blit(self.image_arrow, (pygame.mouse.get_pos()))
+
+            self.main_screen.blit(pygame.font.Font(None, 20).render(
+                f'fps: {round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME is not None else "---"}', 0,
+                (255, 255, 255)), (0, 0))
 
             # Обновление дисплея
             pygame.display.flip()
@@ -555,12 +559,11 @@ class GameSpace:
         sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed())}')
 
     def update(self):
+        tick = self.clock.tick()  # Получения момента времени c последнего tick'а
 
         '''Обновляет данные игры'''
         if self.pause_status is True:
             return
-
-        tick = self.clock.tick()  # Получения момента времени
         self.player_group.update(tick)  # Обновление персонажа
         self.enemies_group.update(tick)
 
@@ -983,14 +986,17 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
                                        (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet, 10, 1)
-        self._sprint_speed = 5
+        self._sprint_speed = 2
+        self._armor = 500
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
         move_kx = move_ky = 0  # Коэффициэты показывающие куда персонаж сходил
         if self.health <= 0:
             # Если здоровье падает до 0 и меньше то игра заканчивается
+            self.kill()
             self.gamespace.finish_game(message='Закончились жизни')
+            return
         if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
             # Движение вправо если нажата клавиша Right или D
             self.move_right(args[0])
@@ -1027,11 +1033,10 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
 
         self.activity = False
 
-        self.r_detection = space.size_cell * 2
-        self.attack_range = (space.size_cell * 2, space.size_cell * 2.5)
+        self.r_detection = space.size_cell * 3
+        self.attack_range = (space.size_cell * 1.5, space.size_cell * 2.5)
 
         self._sprint_speed = 2
-        self.k = 1
 
     def ai(self, tick, target):
         move_kx = move_ky = 0
@@ -1122,5 +1127,8 @@ class Camera:
 
 
 if __name__ == '__main__':
-    ex = GameExample()
-    ex.mainloop()
+    try:
+        ex = GameExample()
+        ex.mainloop()
+    except Exception:
+        input('Произошла какае-то проблемма. Нажмите Enter для выхода')
