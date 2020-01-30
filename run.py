@@ -7,7 +7,7 @@ from settings_launcher import SettingsWindow, QApplication
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
-DEBUG_INFO = False  # Флаг доп. информации в консоли
+DEBUG_INFO = True  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -236,9 +236,15 @@ class GameExample:
                                    pos=(int(self.width * 0.85), int(self.width * 0.05 + label_armor.get_size()[1])),
                                    bolden=False, show_background=False, number=14, color_text=_Color('white'))
 
+        label_number_level = Punkt(text='Level 000', font=_SysFont('gabriola', int(self.height * 0.05)),
+                                   pos=(int(self.width * 0.4), int(self.width * 0.05)), bolden=False,
+                                   show_background=False, number=15, color_text=_Color('white'))
+        label_number_level.number_level = 0
+
         self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
                                    label_armor, label_enegy, label_sprint_speed,
-                                   label_second_weapon, label_health, label_shields)  # Добавление пунктов
+                                   label_second_weapon, label_health, label_shields,
+                                   label_number_level)  # Добавление пунктов
 
     def mouse_press_event(self, event):
         '''События мыши'''
@@ -248,7 +254,7 @@ class GameExample:
                 # Проверяет элементы после нажатия мышкой кнопкой "1"
                 self.menu.check_on_press_punkts(event.pos)
 
-        if self.mode == MODE_GAME:
+        elif self.mode == MODE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # Проверяет элементы после нажатия мышкой кнопкой "1"
                 if self.game_space.check_on_press_punkts(event.pos):
@@ -415,11 +421,12 @@ class GameSpace:
         self.size_cell = int(self.game.height * 0.2)
 
         self.all_sprites = pygame.sprite.Group()  # Все спрайты
-        self.walls_group = pygame.sprite.Group()  # Спрайты стен
-        self.items_group = pygame.sprite.Group()  # Спрайты вещей
-        self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
         self.player_group = pygame.sprite.Group()  # Спрайт игрока
+        self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
+        self.walls_group = pygame.sprite.Group()  # Спрайты стен
         self.tiles_group = pygame.sprite.Group()  # Спрайты земли
+        self.items_group = pygame.sprite.Group()  # Спрайты вещей
+        self.transitional_portal_group = pygame.sprite.Group()  # Спрайт выхода
 
         self.player = None  # Создание игрока
         self.clock = None  # Создание игрового времени
@@ -430,6 +437,7 @@ class GameSpace:
         '''Рисует игровое пространство'''
         self.tiles_group.draw(screen)
         self.walls_group.draw(screen)
+        self.transitional_portal_group.draw(screen)
         self.items_group.draw(screen)
         self.player_group.draw(screen)
         self.enemies_group.draw(screen)
@@ -478,12 +486,13 @@ class GameSpace:
 
         self.update_interface()  # Обновление интерфейса
 
-        self.level_x, level_y = self.generate_level(self.get_next_level())
+        self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
     def get_next_level(self):
         '''Получение следующего уровня'''
         try:
+            self.get_punkt(15).number_level += 1
             return self.levels.pop(0)
         except IndexError:
             return None
@@ -557,15 +566,23 @@ class GameSpace:
         sprint_punkt = self.get_punkt(14)
         sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed())}')
 
+        label_level = self.get_punkt(15)
+        label_level.set_text(f'Level {label_level.number_level}')
+
     def update(self):
         '''Обновляет данные игры'''
+
+        tick = self.clock.tick()  # Получения момента времени
         if self.pause_status is True:
             return
 
-        tick = self.clock.tick()  # Получения момента времени
         self.player_group.update(tick)  # Обновление персонажа
-
         self.update_interface()  # Обновление интерфейса
+
+        if pygame.sprite.groupcollide(self.player_group, self.transitional_portal_group, False, False):
+            if not self.enemies_group.sprites():
+                self.generate_level(self.get_next_level())
+                return
         # Обновление камеры
         self.camera.update(self.player)
         for sprite in self.all_sprites:
@@ -574,8 +591,10 @@ class GameSpace:
     def generate_level(self, level):
         print('\tStart generate level') if DEBUG_INFO else None
         if level is None:
-            self.finish_game('Уровни кончились!!!')
-            return 0, 0
+            return self.finish_game('Уровни кончились!!!')
+        self.game.main_screen.fill((0, 0, 0))
+        self.game.main_screen.blit(self.game.menu.image_background, (0, 0))
+        pygame.display.flip()
         self.empty_sprites()
         for y in range(len(level)):
             for x in range(len(level[y])):
@@ -584,12 +603,13 @@ class GameSpace:
                     Tile(self, x, y)
                 if obj == '#':
                     Wall(self, x, y)
+                if obj == 'E':
+                    TransitionalPortal(self, x, y)
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
 
         print('\tFinish generate level') if DEBUG_INFO else None
-        return x, y
 
     def load_levels(self, directory):
         '''Загрузка пакета уровней'''
@@ -624,6 +644,7 @@ class GameSpace:
         self.enemies_group.empty()
         self.tiles_group.empty()
         self.player_group.empty()
+        self.transitional_portal_group.empty()
 
     def get_punkt(self, number):
         '''Возвращает пункт по заданному номеру'''
@@ -1016,6 +1037,16 @@ class Tile(GameObject):
         super().__init__(space, x, y)
         self.set_image(space.game.load_image('tile\\tile_1.png'))
         self.add(space.tiles_group)
+
+
+class TransitionalPortal(GameObject):
+    '''
+    Класс портала для перехода на новый уровень
+    '''
+
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y)
+        self.add(space.transitional_portal_group)
 
 
 class Camera:
