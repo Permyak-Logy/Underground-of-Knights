@@ -987,7 +987,6 @@ class Player(BaseHero, AnimatedSpriteForHero):
                                        (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet, 10, 1)
         self._sprint_speed = 2
-        self._armor = 500
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
@@ -1041,7 +1040,7 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
     def ai(self, tick, target):
         move_kx = move_ky = 0
         if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
-            target.half_damage(0.5)
+            self.attack(target)
         elif not self.attack_range[1] > self.get_distance(target):
             if self.true_x < target.true_x:
                 self.move_right(tick)
@@ -1071,6 +1070,8 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         self.update_animation(tick, move_kx, move_ky, self.sprint_speed())
 
     def update(self, *args):
+        if self.health <= 0:
+            return self.kill()
         if self.activity:
             self.ai(args[0], self.gamespace.player)
         elif self.get_distance(self.gamespace.player) <= self.r_detection:
