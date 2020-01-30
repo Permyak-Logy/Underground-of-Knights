@@ -484,6 +484,8 @@ class GameSpace:
         energy_punkt = self.get_punkt(12)  # Полоска энергии
         energy_punkt.max_energy = self.player.energy
 
+        self.get_punkt(15).number_level = 0  # Номер уровня
+
         self.update_interface()  # Обновление интерфейса
 
         self.generate_level(self.get_next_level())
