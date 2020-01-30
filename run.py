@@ -73,6 +73,10 @@ class GameExample:
                 # Отрисовка курсора
                 self.main_screen.blit(self.image_arrow, (pygame.mouse.get_pos()))
 
+            self.main_screen.blit(pygame.font.Font(None, 20).render(
+                f'fps: {round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME is not None else "---"}', 0,
+                (255, 255, 255)), (0, 0))
+
             # Обновление дисплея
             pygame.display.flip()
 
@@ -806,18 +810,35 @@ class AnimatedSpriteForHero(object):
             self.image = self.std_image
 
 
-class BaseHero(pygame.sprite.Sprite):
-    def __init__(self, space, x, y, *groups, image=None):
-        super().__init__(*groups)
+class GameObject(pygame.sprite.Sprite):
+    def __init__(self, space, x, y):
+        super().__init__(space.all_sprites)
         self.gamespace = space
-        if image is None:
-            self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
-            self.image.fill(pygame.color.Color('purple'))
-        else:
-            self.image = image
-
+        self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
+        self.image.fill(pygame.color.Color('purple'))
         self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
+        print(f'create {self.__class__.__name__}(x={x}; y={y})') if DEBUG_INFO else None
+
+    def set_image(self, image):
+        '''Установка картинки'''
+        self.image = pygame.transform.scale(image, (self.gamespace.size_cell,
+                                                    self.gamespace.size_cell))
+
+    def set_pos(self, x, y):
+        '''Установка позиции'''
+        print(f'{self.__class__}.set_pos(x={x}, y={y})') if DEBUG_INFO else None
+        self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
+                                                               self.gamespace.size_cell * y)
+
+
+class BaseHero(GameObject):
+    '''
+    Базовый класс для персонажей
+    '''
+
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y)
         # Радиус подбора предметов
         self.take_radius = space.size_cell
         # Маска
@@ -837,8 +858,6 @@ class BaseHero(pygame.sprite.Sprite):
         self._energy_efficiency = 1  # Энергоэфективность
         self._duration = 1  # Длительность
 
-        print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
-
     def attack(self, pos):
         '''Атака из текущего оружия'''
         print(f'{self.__class__.__name__}().attack(pos={pos})') if DEBUG_INFO else None
@@ -847,12 +866,6 @@ class BaseHero(pygame.sprite.Sprite):
             return
         else:
             weapon.attack(pos)
-
-    def set_pos(self, x, y):
-        '''Установка позиции'''
-        print(f'{self.__class__}.set_pos(x={x}, y={y})') if DEBUG_INFO else None
-        self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
-                                                               self.gamespace.size_cell * y)
 
     def half_damage(self, damage):
         '''Получение урона'''
@@ -927,11 +940,13 @@ class Player(BaseHero, AnimatedSpriteForHero):
     '''
 
     def __init__(self, space, x, y):
-        image = pygame.transform.scale(space.game.load_image('player\std.png', -1), (space.size_cell, space.size_cell))
-        super().__init__(space, x, y, space.all_sprites, image=image)
-        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
-                                       (space.size_cell * 10, space.size_cell * 1))
-        self.init_animation(sheet, 10, 1)
+        super().__init__(space, x, y)
+        image = pygame.transform.scale(space.game.load_image('player\std.png', -1),
+                                       (space.size_cell, space.size_cell))
+        self.set_image(image)
+        sheet_animation_run = self.gamespace.game.load_image('player\\animation run 10x1.png', -1)
+        sheet_animation_run = pygame.transform.scale(sheet_animation_run, (space.size_cell * 10, space.size_cell * 1))
+        self.init_animation(sheet_animation_run, 10, 1)
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()
@@ -981,27 +996,26 @@ class Player(BaseHero, AnimatedSpriteForHero):
         self.update_animation(args[0], move_kx, move_ky, self.sprint_speed())
 
 
-class Wall(pygame.sprite.Sprite):
+class Wall(GameObject):
+    '''
+    Класс стен
+    '''
+
     def __init__(self, space, x, y):
-        super().__init__(space.all_sprites, space.walls_group)
-        self.gamespace = space  # Подключение игрового пространства
-        # Создание изображения
-        self.image = pygame.transform.scale(space.game.load_image('wall\wall.jpg'), (space.size_cell, space.size_cell))
-        # Создание прямоукольника
-        self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
-        print(f'create Wall(x={x}, y={y})') if DEBUG_INFO else None
+        super().__init__(space, x, y)
+        self.set_image(space.game.load_image('wall\wall.jpg'))
+        self.add(space.walls_group)
 
 
-class Tile(pygame.sprite.Sprite):
+class Tile(GameObject):
+    '''
+    Класс плиток
+    '''
+
     def __init__(self, space, x, y):
-        super().__init__(space.all_sprites, space.tiles_group)
-        self.gamespace = space  # Подключение игрового пространства
-        # Создание изображения
-        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'),
-                                            (space.size_cell, space.size_cell))
-        # Создание прямоугольника
-        self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
-        print(f'create Tile(x={x}, y={y})') if DEBUG_INFO else None
+        super().__init__(space, x, y)
+        self.set_image(space.game.load_image('tile\\tile_1.png'))
+        self.add(space.tiles_group)
 
 
 class Camera:
@@ -1015,9 +1029,8 @@ class Camera:
     def apply(self, obj):
         obj.rect.x += self.dx
         obj.rect.y += self.dy
-        if isinstance(obj, BaseHero):
-            obj.true_x += self.dx
-            obj.true_y += self.dy
+        obj.true_x += self.dx
+        obj.true_y += self.dy
 
     # позиционировать камеру на объекте target
     def update(self, target):
