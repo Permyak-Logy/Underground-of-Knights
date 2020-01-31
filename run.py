@@ -341,24 +341,31 @@ class GameExample:
         '''Зашрузочная заставка'''
         print(f'{self.__class__}.start_screen_opening()') if DEBUG_INFO else None
         author_PyPLy = self.load_image('PyPLy.png', colorkey=-1)
-        k = 0.5
-        author_PyPLy = pygame.transform.scale(author_PyPLy, (int(author_PyPLy.get_width() * (self.width // 640) * k),
-                                                             int(author_PyPLy.get_height() * (self.height // 360) * k)))
-        i = 0
-        while i <= 1000:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.terminate()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    return
-                if event.type == pygame.KEYDOWN:
-                    return
-            self.main_screen.fill(pygame.color.Color('black'))
-            author_PyPLy.set_alpha(i // 2 if i <= 400 else (200 if i <= 600 else (1000 - i) // 2))
-            self.main_screen.blit(author_PyPLy, (self.width // 2 - author_PyPLy.get_width() // 2,
-                                                 self.height // 2 - author_PyPLy.get_height() // 2))
-            i += 1
-            pygame.display.flip()
+        author_PyPLy = pygame.transform.scale(author_PyPLy, (int(author_PyPLy.get_width() * (self.width // 640) * 0.5),
+                                                             int(author_PyPLy.get_height() * (self.height // 360) * 0.5)))
+#
+        author_Landrus13 = self.load_image('Landrus13.png')
+        author_Landrus13 = pygame.transform.scale(author_Landrus13, (int(author_Landrus13.get_width() * (self.width // 640) * 0.5),
+                                                                     int(author_Landrus13.get_height() * (self.height // 360) * 0.5)))
+        for image in [author_PyPLy, author_Landrus13]:
+            i = 0
+            clock = pygame.time.Clock()
+            while i <= 600:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        self.terminate()
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        return
+                    if event.type == pygame.KEYDOWN:
+                        return
+                self.main_screen.fill(pygame.color.Color('black'))
+                tick = clock.tick()
+                i += tick * 5 / 1000
+                image.set_alpha(int(i) if i <= 200 else (200 if i <= 400 else int(600 - i)))
+                self.main_screen.blit(image, (self.width // 2 - image.get_width() // 2,
+                                              self.height // 2 - image.get_height() // 2))
+                i += 1
+                pygame.display.flip()
 
     @staticmethod
     def terminate():
