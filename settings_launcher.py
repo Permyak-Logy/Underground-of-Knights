@@ -5,7 +5,7 @@ from win32api import GetSystemMetrics
 
 
 class SettingsWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, game):
+    def __init__(self, game=None):
         super().__init__()
         self.setupUi(self)
         self.game = game
@@ -17,6 +17,8 @@ class SettingsWindow(QMainWindow, Ui_MainWindow):
         self.show()
 
     def change_p(self):
+        if self.game is None:
+            return
         self.game.music.set_volume(self.slider_volume_music.value() / 100)
 
     def load_settings(self):
