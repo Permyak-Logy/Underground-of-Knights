@@ -930,7 +930,7 @@ class BaseHero(GameObject):
 
     def attack(self, target):
         '''Атака из текущего оружия'''
-        print(f'{self.__class__.__name__}().attack(pos={pos})') if DEBUG_INFO else None
+        print(f'{self.__class__.__name__}().attack(target={target})') if DEBUG_INFO else None
         weapon = self.things.get('cur_weapon')
         if weapon is None:
             return
@@ -1095,9 +1095,10 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
     '''
 
     def __init__(self, space, x, y, level=None):
+        super().__init__(space, x, y)
         image = pygame.transform.scale(space.game.load_image('enemy\goblin std2.png', -1),
                                        (space.size_cell, space.size_cell))
-        super().__init__(space, x, y, space.all_sprites, image=image)
+        self.set_image(image)
         sheet = pygame.transform.scale(self.gamespace.game.load_image('enemy\\animation run 6x1.png', -1),
                                        (space.size_cell * 6, space.size_cell * 1))
         self.init_animation(sheet, 6, 1)
@@ -1209,8 +1210,5 @@ class Camera:
 
 
 if __name__ == '__main__':
-    try:
-        ex = GameExample()
-        ex.mainloop()
-    except Exception:
-        input('Произошла какае-то проблемма. Нажмите Enter для выхода')
+    ex = GameExample()
+    ex.mainloop()
