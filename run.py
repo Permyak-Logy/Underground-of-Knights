@@ -42,13 +42,12 @@ class GameExample:
         self.mode = None  # Режим окна
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
 
-        self.open_menu()
-
     def mainloop(self):
         ''' Главный цикл программы '''
         print('\n-----Game started------') if DEBUG_INFO else None
 
         self.start_screen_opening()
+        self.open_menu()
         while True:
             # Проверка событий
             for event in pygame.event.get():
@@ -340,31 +339,51 @@ class GameExample:
     def start_screen_opening(self):
         '''Зашрузочная заставка'''
         print(f'{self.__class__}.start_screen_opening()') if DEBUG_INFO else None
-        author_PyPLy = self.load_image('PyPLy.png', colorkey=-1)
-        author_PyPLy = pygame.transform.scale(author_PyPLy, (int(author_PyPLy.get_width() * (self.width // 640) * 0.5),
-                                                             int(author_PyPLy.get_height() * (self.height // 360) * 0.5)))
+        logo_PyPLy = self.load_image('PyPLy.png', colorkey=-1)
+        logo_PyPLy = pygame.transform.scale(logo_PyPLy,
+                                            (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
+                                             int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
 #
-        author_Landrus13 = self.load_image('Landrus13.png')
-        author_Landrus13 = pygame.transform.scale(author_Landrus13, (int(author_Landrus13.get_width() * (self.width // 640) * 0.5),
-                                                                     int(author_Landrus13.get_height() * (self.height // 360) * 0.5)))
-        for image in [author_PyPLy, author_Landrus13]:
-            i = 0
-            clock = pygame.time.Clock()
-            while i <= 600:
+        logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
+        logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
+                                                (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
+                                                 int(logo_Landrus13.get_height() * (self.height // 360) * 0.5)))
+
+        clock = pygame.time.Clock()
+        for image in [logo_PyPLy, logo_Landrus13]:
+            alpha = 0  # Начальный показатель alpha канала
+            manifestation_rate = 100  # Скорость проявления исзображения в %/сек
+            continuation_time = 1  # Сколько времени осталось показывать изображение после его полного отображения
+            fade_rate = 400  # Скорость угасния исзображения в %/сек
+            running = True
+            while running:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.terminate()
                     if event.type == pygame.MOUSEBUTTONDOWN:
-                        return
+                        running = False
                     if event.type == pygame.KEYDOWN:
-                        return
+                        running = False
+
+                tick = clock.tick()  # Получение времени с предыдущего tick
+                if alpha < 200 and continuation_time > 0:
+                    # Проявление image в самом начале путём увеличения alpha канала
+                    alpha += manifestation_rate * 2 * tick / 1000
+                elif continuation_time > 0:
+                    # Отсчёт оставшегося времени показа
+                    continuation_time -= tick / 1000
+                elif alpha >= 0 and continuation_time <= 0:
+                    # Скрытие изображения путём уменьшения alpha канала
+                    alpha -= fade_rate * 2 * tick / 1000
+                else:
+                    # Как только анимация заканчивается перейти к следующиему изображению
+                    running = False
+                # Заливка главного кадра
                 self.main_screen.fill(pygame.color.Color('black'))
-                tick = clock.tick()
-                i += tick * 5 / 1000
-                image.set_alpha(int(i) if i <= 200 else (200 if i <= 400 else int(600 - i)))
+                image.set_alpha(alpha)  # Установка alpha канала
+                # Наложение изображения на главный кадр
                 self.main_screen.blit(image, (self.width // 2 - image.get_width() // 2,
                                               self.height // 2 - image.get_height() // 2))
-                i += 1
                 pygame.display.flip()
 
     @staticmethod
