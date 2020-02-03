@@ -1,3 +1,4 @@
-matrix 800x600
-fullscreen false
+matrix 1920x1080
+fullscreen true
 volume 0.0
+packege test

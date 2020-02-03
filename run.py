@@ -113,6 +113,8 @@ class GameExample:
                 result[key] = val == 'true'
             elif key == 'volume':
                 result[key] = float(val)
+            elif key == 'packege':
+                result[key] = val
         return result
 
     @staticmethod
@@ -290,7 +292,7 @@ class GameExample:
         '''Начать игру'''
         print('GameExample.start_game()') if DEBUG_INFO else None
         self.mode = MODE_GAME  # Установка режима MODE_GAME
-        self.game_space.new_game()  # Начало новой игры в game_space
+        self.game_space.new_game(self.data_settings['packege'])  # Начало новой игры в game_space
         self.unset_pause()  # Убирание паузы
         self.music.pause()  # Остановка музыки
 
@@ -499,12 +501,12 @@ class GameSpace:
                 return True
         return False
 
-    def new_game(self):
+    def new_game(self, packege):
         '''Сбрасывает предыдущий прогресс и данные'''
         print(f'{self.__class__}.new_game()') if DEBUG_INFO else None
 
         self.levels.clear()
-        self.load_levels('test')
+        self.load_levels(packege)
         self.player = Player(self, 0, 0)
 
         # Подключение функций персонажа и его показателей к пунктам:
