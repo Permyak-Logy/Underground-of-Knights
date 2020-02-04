@@ -1,8 +1,6 @@
 import pygame
 import os
 import sys
-from win32api import GetSystemMetrics
-from random import randint as rd
 from settings_launcher import SettingsWindow, QApplication
 from random import randint
 
@@ -575,8 +573,8 @@ class GameSpace:
         image_health = pygame.Surface(size=health_punkt.get_size())
         image_health.fill(pygame.color.Color('#800000'))
         pygame.draw.rect(image_health, pygame.color.Color('#FF0000'),
-                         (0, 0, image_health.get_width() * (self.player.health / health_punkt.max_health),
-                          image_health.get_height()))
+                         (0, 0, image_health.get_width() * (self.player.health / self.player.max_health),
+                          image_health.get_height())) if self.player.health > 0 else None
         health_punkt.set_image(image_health)
         health_punkt.set_text(f'Health: {round(self.player.health)}')
 
@@ -585,8 +583,8 @@ class GameSpace:
         image_shields = pygame.Surface(size=shields_punkt.get_size())
         image_shields.fill(pygame.color.Color('#000080'))
         pygame.draw.rect(image_shields, pygame.color.Color('#0000FF'),
-                         (0, 0, image_shields.get_width() * (self.player.shields / shields_punkt.max_shields),
-                          image_shields.get_height()))
+                         (0, 0, image_shields.get_width() * (self.player.shields / self.player.max_shields),
+                          image_shields.get_height())) if self.player.shields > 0 else None
         shields_punkt.set_image(image_shields)
         shields_punkt.set_text(f'Shields: {round(self.player.shields)}')
 
@@ -596,7 +594,7 @@ class GameSpace:
         image_energy.fill(pygame.color.Color('#008080'))
         pygame.draw.rect(image_energy, pygame.color.Color('#00FFFF'),
                          (0, 0, image_energy.get_width() * (self.player.energy / energy_punkt.max_energy),
-                          image_energy.get_height()))
+                          image_energy.get_height())) if self.player.energy > 0 else None
         energy_punkt.set_image(image_energy)
         energy_punkt.set_text(f'Energy: {round(self.player.energy)}')
 
@@ -634,6 +632,7 @@ class GameSpace:
         print('\tStart generate level') if DEBUG_INFO else None
         if level is None:
             return self.finish_game('Уровни кончились!!!')
+        number_level = self.get_punkt(15).number_level
         self.game.main_screen.fill((0, 0, 0))
         self.game.main_screen.blit(self.game.menu.image_background, (0, 0))
         pygame.display.flip()
@@ -646,7 +645,7 @@ class GameSpace:
                 if obj == '#':
                     Wall(self, x, y)
                 if obj == 'e':
-                    Enemy(self, x, y).add(self.enemies_group)
+                    Enemy(self, x, y, level=number_level)
                 if obj == 'E':
                     TransitionalPortal(self, x, y)
                 if obj == '@':
@@ -658,27 +657,26 @@ class GameSpace:
     def load_levels(self, directory):
         '''Загрузка пакета уровней'''
         print('GameSpace.load_levels()') if DEBUG_INFO else None
-        try:
-            print(f'\tStart load levels {directory}') if DEBUG_INFO else None
-            self.levels.clear()
-            for i in range(1, 10 ** 10):
-                print(f'\t\t--- connect level lvl_{i} ', end='') if DEBUG_INFO else None
-                filename = f"data/levels/{directory}/lvl_{i}.txt"
-                # читаем уровень, убирая символы перевода строки
-                with open(filename, 'r') as mapFile:
-                    level_map = [line.strip().split() for line in mapFile]
+        print(f'\tStart load levels {directory}') if DEBUG_INFO else None
+        self.levels.clear()
+        for i in range(1, 10 ** 10):
+            print(f'\t\t--- connect level lvl_{i} ', end='') if DEBUG_INFO else None
+            filename = f"data/levels/{directory}/lvl_{i}.txt"
+            # читаем уровень, убирая символы перевода строки
+            if not os.access(filename, os.F_OK):
+                break
+            with open(filename, 'r') as mapFile:
+                level_map = [line.strip().split() for line in mapFile]
 
-                # и подсчитываем максимальную длину
-                max_width = max(map(len, level_map))
+            # и подсчитываем максимальную длину
+            max_width = max(map(len, level_map))
 
-                # дополняем каждую строку пустыми клетками ('.')
-                self.levels.append(list(map(lambda x: x + ['_'] * (max_width - len(x)), level_map)))
-                print('True') if DEBUG_INFO else None
-
-        except FileNotFoundError:
-            print('False') if DEBUG_INFO else None
-            print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
-            [print([print(row) for row in level]) for level in self.levels] if DEBUG_INFO else None
+            # дополняем каждую строку пустыми клетками ('.')
+            self.levels.append(list(map(lambda x: x + ['_'] * (max_width - len(x)), level_map)))
+            print('True') if DEBUG_INFO else None
+        print('False') if DEBUG_INFO else None
+        print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
+        [print([print(row) for row in level]) for level in self.levels] if DEBUG_INFO else None
 
     def empty_sprites(self):
         print('GameSpace.empty_sprites()') if DEBUG_INFO else None
@@ -917,9 +915,9 @@ class BaseHero(GameObject):
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
         self._armor = 0  # Броня
-        self.health = 100  # Здоровье
+        self.max_health = self.health = 100  # Здоровье
         self._sprint_speed = 2  # Скорость спринта
-        self.shields = 100  # Щиты
+        self.max_shields = self.shields = 100  # Щиты
         self.energy = 100  # Энергия
         self._strength = 1  # Сила
         self._radius = 1  # Радиус
@@ -927,6 +925,25 @@ class BaseHero(GameObject):
         self._duration = 1  # Длительность
 
         print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
+
+    def draw_health_shields_line(self):
+        line_health_and_shields = pygame.Surface(size=(self.image.get_width() * 2 / 3, 3))
+        sum_max_health_and_shields = self.max_health + self.max_shields
+        size_line_max_health = (self.max_health / sum_max_health_and_shields * line_health_and_shields.get_width(),
+                                line_health_and_shields.get_height())
+        size_line_health = (self.health / sum_max_health_and_shields * line_health_and_shields.get_width(),
+                            line_health_and_shields.get_height())
+        size_line_max_shields = (self.max_shields / sum_max_health_and_shields * line_health_and_shields.get_width(),
+                                 line_health_and_shields.get_height())
+        size_line_shields = (self.shields / sum_max_health_and_shields * line_health_and_shields.get_width(),
+                             line_health_and_shields.get_height())
+        pygame.draw.rect(line_health_and_shields, pygame.color.Color('#800000'), (0, 0, *size_line_max_health))
+        pygame.draw.rect(line_health_and_shields, pygame.color.Color('#FF0000'), (0, 0, *size_line_health))
+        pygame.draw.rect(line_health_and_shields, pygame.color.Color('#000080'),
+                         (size_line_max_health[0], 0, *size_line_max_shields)) if self.health > 0 else None
+        pygame.draw.rect(line_health_and_shields, pygame.color.Color('#0000FF'),
+                         (size_line_max_health[0], 0, *size_line_shields)) if self.shields > 0 else None
+        self.image.blit(line_health_and_shields, (self.image.get_width() / 6, 0))
 
     def attack(self, target):
         '''Атака из текущего оружия'''
@@ -1102,19 +1119,29 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         sheet = pygame.transform.scale(self.gamespace.game.load_image('enemy\\animation run 6x1.png', -1),
                                        (space.size_cell * 6, space.size_cell * 1))
         self.init_animation(sheet, 6, 1)
+        self.add(space.enemies_group)
         self.turn = []
 
-        self.activity = False
+        self.activity = False  # Флаг активности интелекта
 
-        self.r_detection = space.size_cell * 3
+        self.r_detection = space.size_cell * 3  # Растояние обнаружения
+        # Радиус атаки (min, max)
         self.attack_range = (space.size_cell * 1.5, space.size_cell * 2.5)
-
-        self._sprint_speed = 2
+        self.attack_frequency = 1  # Частота атак в атака/сек
+        self.attack_readiness = 1  # Готовность к атаке в %
+        self.max_health = self.health = self.health * (1 + (level - 1) ** 2 * 0.015)
+        self.max_shields = self.shields = self.health * (1 + (level - 1) ** 2 * 0.0075)
+        self._armor *= 1 + (level - 1) ** 1.75 * 0.005
 
     def ai(self, tick, target):
         move_kx = move_ky = 0
+        target.half_damage(1)
         if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
-            self.attack(target)
+            if self.attack_readiness >= 1:
+                self.attack(target)
+                self.attack_readiness = 0
+            else:
+                self.attack_readiness += self.attack_frequency * tick / 1000
         elif not self.attack_range[1] > self.get_distance(target):
             if self.true_x < target.true_x:
                 self.move_right(tick)
@@ -1144,6 +1171,7 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         self.update_animation(tick, move_kx, move_ky, self.sprint_speed())
 
     def update(self, *args):
+        self.image.blit(self.std_image, (0, 0))
         if self.health <= 0:
             return self.kill()
         if self.activity:
@@ -1155,6 +1183,7 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
                 if self.get_distance(enemy) <= self.r_detection and enemy.activity:
                     self.activity = True
                     break
+        self.draw_health_shields_line()
 
 
 class Wall(GameObject):
