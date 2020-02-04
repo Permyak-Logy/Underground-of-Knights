@@ -1135,7 +1135,6 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
 
     def ai(self, tick, target):
         move_kx = move_ky = 0
-        target.half_damage(1)
         if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
             if self.attack_readiness >= 1:
                 self.attack(target)
