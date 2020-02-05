@@ -352,7 +352,6 @@ class GameExample:
         logo_PyPLy = pygame.transform.scale(logo_PyPLy,
                                             (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
                                              int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
-#
         logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
         logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
                                                 (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
@@ -943,7 +942,7 @@ class BaseHero(GameObject):
                          (size_line_max_health[0], 0, *size_line_max_shields)) if self.health > 0 else None
         pygame.draw.rect(line_health_and_shields, pygame.color.Color('#0000FF'),
                          (size_line_max_health[0], 0, *size_line_shields)) if self.shields > 0 else None
-        self.image.blit(line_health_and_shields, (self.image.get_width() / 6, 0))
+        self.image.blit(line_health_and_shields, (self.image.get_width() / 6, 10))
 
     def attack(self, target):
         '''Атака из текущего оружия'''
@@ -1170,7 +1169,6 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         self.update_animation(tick, move_kx, move_ky, self.sprint_speed())
 
     def update(self, *args):
-        self.image.blit(self.std_image, (0, 0))
         if self.health <= 0:
             return self.kill()
         if self.activity:
