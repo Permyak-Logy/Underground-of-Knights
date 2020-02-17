@@ -31,7 +31,7 @@ class GameExample:
         self.update_settings()
 
         # Установка титульного имени окна
-        pygame.display.set_caption('Knights')
+        pygame.display.set_caption('Underground of Knights')
 
         # Установка иконки
         pygame.display.set_icon(self.load_image('icon.png'))
@@ -148,8 +148,8 @@ class GameExample:
         self.menu = Menu(self)  # Создание меню
 
         # Надпись названия игры
-        label_title = Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
-                            show_background=False, color_text=_Color('white'), number=0,
+        label_title = Punkt(text='Underground of Knights', pos=(int(self.width * 0.4), int(self.height * 0.15)),
+                            size=-1, show_background=False, color_text=_Color('white'), number=0,
                             font=_SysFont('gabriola', self.height // 10), bolden=False)
         # Кнопка "Играть"
         btn_play = Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
