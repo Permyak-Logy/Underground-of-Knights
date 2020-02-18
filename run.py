@@ -359,9 +359,12 @@ class GameExample:
         logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
                                                 (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
                                                  int(logo_Landrus13.get_height() * (self.height // 360) * 0.5)))
-
+        logo_PyGame = self.load_image('PyGame.png', colorkey=-1)
+        logo_PyGame = pygame.transform.scale(logo_PyGame,
+                                             (int(logo_PyGame.get_width() * (self.width // 640) * 0.27),
+                                              int(logo_PyGame.get_height() * (self.height // 360) * 0.27)))
         clock = pygame.time.Clock()
-        for image in [logo_PyPLy, logo_Landrus13]:
+        for image in [logo_PyPLy, logo_Landrus13, logo_PyGame]:
             alpha = 0  # Начальный показатель alpha канала
             manifestation_rate = 100  # Скорость проявления исзображения в %/сек
             continuation_time = 1  # Сколько времени осталось показывать изображение после его полного отображения
