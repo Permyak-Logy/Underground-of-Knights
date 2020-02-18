@@ -354,7 +354,7 @@ class GameExample:
         logo_PyPLy = pygame.transform.scale(logo_PyPLy,
                                             (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
                                              int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
-#
+        #
         logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
         logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
                                                 (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
@@ -695,6 +695,28 @@ class GameSpace:
         for punkt in self.punkts:
             if punkt.number == number:
                 return punkt
+
+
+class AnimatedPunkt():
+    class AnimateBase(pygame.sprite.Sprite):
+        def __init__(self, x, y, size, *groups):
+            super().__init__(*groups)
+            self.image = pygame.Surface(size=size)
+            self.rect = self.image.get_rect().move(x, y)
+
+    class Blinking(AnimateBase):
+        def __init__(self, x, y, size, *groups):
+            super().__init__(x, y, size, *groups)
+
+        def update(self, *args, **kwargs):
+            pass
+
+    class Frames(AnimateBase):
+        def __init__(self, x, y, size, *groups):
+            super().__init__(x, y, size, *groups)
+
+        def update(self, *args, **kwargs):
+            pass
 
 
 class Punkt:
