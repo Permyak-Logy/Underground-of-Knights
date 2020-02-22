@@ -285,6 +285,11 @@ class GameExample:
                 self.open_menu()
             elif event.key == pygame.K_f:
                 self.game_space.player.change_weapons()
+            elif event.key == pygame.K_e:
+                if pygame.sprite.groupcollide(self.game_space.player_group, self.game_space.transitional_portal_group,
+                                              False, False):
+                    if not self.game_space.enemies_group.sprites():
+                        self.game_space.generate_level(self.game_space.get_next_level())
 
     def start_game(self):
         '''Начать игру'''
@@ -621,10 +626,6 @@ class GameSpace:
 
         self.update_interface()  # Обновление интерфейса
 
-        if pygame.sprite.groupcollide(self.player_group, self.transitional_portal_group, False, False):
-            if not self.enemies_group.sprites():
-                self.generate_level(self.get_next_level())
-                return
         # Обновление камеры
         self.camera.update(self.player)
         for sprite in self.all_sprites:
@@ -1115,6 +1116,7 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         move_kx = move_ky = 0
         if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
             self.attack(target)
+            self.half_damage(1)
         elif not self.attack_range[1] > self.get_distance(target):
             if self.true_x < target.true_x:
                 self.move_right(tick)
@@ -1186,6 +1188,7 @@ class TransitionalPortal(GameObject):
 
     def __init__(self, space, x, y):
         super().__init__(space, x, y)
+        self.set_image(space.game.load_image('transitional portal\\std.png', -1))
         self.add(space.transitional_portal_group)
 
 
