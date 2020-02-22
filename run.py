@@ -171,8 +171,8 @@ class GameExample:
                          show_background=False, color_text=_Color('red'), number=4,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
         # Анимация мерцания света
-        animate_light = AnimatedPunkt.Blinking(int(self.width * 0.56), int(self.height * 0.5), (int(self.height * 0.2),
-                                                                                               int(self.height * 0.2)),
+        animate_light = AnimatedPunkt.Blinking(int(self.width * 0.575), int(self.height * 0.485),
+                                               (int(self.height * 0.2), int(self.height * 0.2)),
                                                self.menu.animated_punkts_group)
 
         pygame.draw.circle(animate_light.image, _Color("yellow"),
@@ -735,7 +735,6 @@ class AnimatedPunkt:
             self.k = 1
 
         def update(self, *args, **kwargs):
-            print(self.cur_alpha)
             if self.var == 1:
                 self.cur_alpha += args[0] * self.v / 1000 * self.k
                 if not self.min_alpha <= self.cur_alpha <= self.max_alpha:
@@ -746,7 +745,6 @@ class AnimatedPunkt:
                         self.cur_alpha = self.max_alpha
             if self.var == 2:
                 self.k = (-1) ** randint(2, 3)
-                # print(self.k)
                 self.cur_alpha += args[0] * self.v / 1000 * self.k
                 if not self.min_alpha <= self.cur_alpha <= self.max_alpha:
                     self.k = -self.k
