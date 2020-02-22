@@ -4,10 +4,11 @@ import sys
 from win32api import GetSystemMetrics
 from random import randint as rd
 from settings_launcher import SettingsWindow, QApplication
+from random import randint
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
-DEBUG_INFO = False  # Флаг доп. информации в консоли
+DEBUG_INFO = True  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -42,13 +43,12 @@ class GameExample:
         self.mode = None  # Режим окна
         self.image_arrow = pygame.transform.scale(self.load_image('arrow.png', -1), (22, 22))  # Картинка курсора
 
-        self.open_menu()
-
     def mainloop(self):
         ''' Главный цикл программы '''
         print('\n-----Game started------') if DEBUG_INFO else None
 
-        # self.start_screen_opening()
+        self.start_screen_opening()
+        self.open_menu()
         while True:
             # Проверка событий
             for event in pygame.event.get():
@@ -72,6 +72,10 @@ class GameExample:
             if pygame.mouse.get_focused():
                 # Отрисовка курсора
                 self.main_screen.blit(self.image_arrow, (pygame.mouse.get_pos()))
+
+            self.main_screen.blit(pygame.font.Font(None, 20).render(
+                f'fps: {round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME is not None else "---"}', 0,
+                (255, 255, 255)), (0, 0))
 
             # Обновление дисплея
             pygame.display.flip()
@@ -232,9 +236,15 @@ class GameExample:
                                    pos=(int(self.width * 0.85), int(self.width * 0.05 + label_armor.get_size()[1])),
                                    bolden=False, show_background=False, number=14, color_text=_Color('white'))
 
+        label_number_level = Punkt(text='Level 000', font=_SysFont('gabriola', int(self.height * 0.05)),
+                                   pos=(int(self.width * 0.4), int(self.width * 0.05)), bolden=False,
+                                   show_background=False, number=15, color_text=_Color('white'))
+        label_number_level.number_level = 0
+
         self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
                                    label_armor, label_enegy, label_sprint_speed,
-                                   label_second_weapon, label_health, label_shields)  # Добавление пунктов
+                                   label_second_weapon, label_health, label_shields,
+                                   label_number_level)  # Добавление пунктов
 
     def mouse_press_event(self, event):
         '''События мыши'''
@@ -244,7 +254,7 @@ class GameExample:
                 # Проверяет элементы после нажатия мышкой кнопкой "1"
                 self.menu.check_on_press_punkts(event.pos)
 
-        if self.mode == MODE_GAME:
+        elif self.mode == MODE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # Проверяет элементы после нажатия мышкой кнопкой "1"
                 if self.game_space.check_on_press_punkts(event.pos):
@@ -340,13 +350,52 @@ class GameExample:
     def start_screen_opening(self):
         '''Зашрузочная заставка'''
         print(f'{self.__class__}.start_screen_opening()') if DEBUG_INFO else None
-        while self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
+        logo_PyPLy = self.load_image('PyPLy.png', colorkey=-1)
+        logo_PyPLy = pygame.transform.scale(logo_PyPLy,
+                                            (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
+                                             int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
+#
+        logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
+        logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
+                                                (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
+                                                 int(logo_Landrus13.get_height() * (self.height // 360) * 0.5)))
 
-            self.main_screen.fill(pygame.color.Color('black'))
-            pygame.display.flip()
+        clock = pygame.time.Clock()
+        for image in [logo_PyPLy, logo_Landrus13]:
+            alpha = 0  # Начальный показатель alpha канала
+            manifestation_rate = 100  # Скорость проявления исзображения в %/сек
+            continuation_time = 1  # Сколько времени осталось показывать изображение после его полного отображения
+            fade_rate = 400  # Скорость угасния исзображения в %/сек
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        self.terminate()
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        running = False
+                    if event.type == pygame.KEYDOWN:
+                        running = False
+
+                tick = clock.tick()  # Получение времени с предыдущего tick
+                if alpha < 200 and continuation_time > 0:
+                    # Проявление image в самом начале путём увеличения alpha канала
+                    alpha += manifestation_rate * 2 * tick / 1000
+                elif continuation_time > 0:
+                    # Отсчёт оставшегося времени показа
+                    continuation_time -= tick / 1000
+                elif alpha >= 0 and continuation_time <= 0:
+                    # Скрытие изображения путём уменьшения alpha канала
+                    alpha -= fade_rate * 2 * tick / 1000
+                else:
+                    # Как только анимация заканчивается перейти к следующиему изображению
+                    running = False
+                # Заливка главного кадра
+                self.main_screen.fill(pygame.color.Color('black'))
+                image.set_alpha(alpha)  # Установка alpha канала
+                # Наложение изображения на главный кадр
+                self.main_screen.blit(image, (self.width // 2 - image.get_width() // 2,
+                                              self.height // 2 - image.get_height() // 2))
+                pygame.display.flip()
 
     @staticmethod
     def terminate():
@@ -411,11 +460,12 @@ class GameSpace:
         self.size_cell = int(self.game.height * 0.2)
 
         self.all_sprites = pygame.sprite.Group()  # Все спрайты
-        self.walls_group = pygame.sprite.Group()  # Спрайты стен
-        self.items_group = pygame.sprite.Group()  # Спрайты вещей
-        self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
         self.player_group = pygame.sprite.Group()  # Спрайт игрока
+        self.enemies_group = pygame.sprite.Group()  # Спрайты врагов
+        self.walls_group = pygame.sprite.Group()  # Спрайты стен
         self.tiles_group = pygame.sprite.Group()  # Спрайты земли
+        self.items_group = pygame.sprite.Group()  # Спрайты вещей
+        self.transitional_portal_group = pygame.sprite.Group()  # Спрайт выхода
 
         self.player = None  # Создание игрока
         self.clock = None  # Создание игрового времени
@@ -426,6 +476,7 @@ class GameSpace:
         '''Рисует игровое пространство'''
         self.tiles_group.draw(screen)
         self.walls_group.draw(screen)
+        self.transitional_portal_group.draw(screen)
         self.items_group.draw(screen)
         self.player_group.draw(screen)
         self.enemies_group.draw(screen)
@@ -472,14 +523,17 @@ class GameSpace:
         energy_punkt = self.get_punkt(12)  # Полоска энергии
         energy_punkt.max_energy = self.player.energy
 
+        self.get_punkt(15).number_level = 0  # Номер уровня
+
         self.update_interface()  # Обновление интерфейса
 
-        self.level_x, level_y = self.generate_level(self.get_next_level())
+        self.generate_level(self.get_next_level())
         self.clock = pygame.time.Clock()
 
     def get_next_level(self):
         '''Получение следующего уровня'''
         try:
+            self.get_punkt(15).number_level += 1
             return self.levels.pop(0)
         except IndexError:
             return None
@@ -553,15 +607,24 @@ class GameSpace:
         sprint_punkt = self.get_punkt(14)
         sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed())}')
 
+        label_level = self.get_punkt(15)
+        label_level.set_text(f'Level {label_level.number_level}')
+
     def update(self):
         '''Обновляет данные игры'''
-        if self.pause_status is True:
-            return
 
         tick = self.clock.tick()  # Получения момента времени
+        if self.pause_status is True:
+            return
         self.player_group.update(tick)  # Обновление персонажа
+        self.enemies_group.update(tick)
 
         self.update_interface()  # Обновление интерфейса
+
+        if pygame.sprite.groupcollide(self.player_group, self.transitional_portal_group, False, False):
+            if not self.enemies_group.sprites():
+                self.generate_level(self.get_next_level())
+                return
         # Обновление камеры
         self.camera.update(self.player)
         for sprite in self.all_sprites:
@@ -570,8 +633,10 @@ class GameSpace:
     def generate_level(self, level):
         print('\tStart generate level') if DEBUG_INFO else None
         if level is None:
-            self.finish_game('Уровни кончились!!!')
-            return 0, 0
+            return self.finish_game('Уровни кончились!!!')
+        self.game.main_screen.fill((0, 0, 0))
+        self.game.main_screen.blit(self.game.menu.image_background, (0, 0))
+        pygame.display.flip()
         self.empty_sprites()
         for y in range(len(level)):
             for x in range(len(level[y])):
@@ -580,12 +645,15 @@ class GameSpace:
                     Tile(self, x, y)
                 if obj == '#':
                     Wall(self, x, y)
+                if obj == 'e':
+                    Enemy(self, x, y).add(self.enemies_group)
+                if obj == 'E':
+                    TransitionalPortal(self, x, y)
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
 
         print('\tFinish generate level') if DEBUG_INFO else None
-        return x, y
 
     def load_levels(self, directory):
         '''Загрузка пакета уровней'''
@@ -620,6 +688,7 @@ class GameSpace:
         self.enemies_group.empty()
         self.tiles_group.empty()
         self.player_group.empty()
+        self.transitional_portal_group.empty()
 
     def get_punkt(self, number):
         '''Возвращает пункт по заданному номеру'''
@@ -778,11 +847,13 @@ class AnimatedSpriteForHero(object):
         self.frames_run = self.cut_sheet(sheet, columns, rows)
         # Текущий кадр
         self.cur_frame_run = 0
+        # Взгляд
+        self.sight = [0, 0]
 
     def cut_sheet(self, sheet, columns, rows):
         '''Разделение доски анимации и возвращение списка кадров'''
         listen = []
-        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+        self.rect = pygame.Rect(self.rect.x, self.rect.y, sheet.get_width() // columns,
                                 sheet.get_height() // rows)
         for j in range(rows):
             for i in range(columns):
@@ -794,30 +865,49 @@ class AnimatedSpriteForHero(object):
     def update_animation(self, *args):
         '''Обновление анимации'''
         if args[1] == 1 or (args[1] == 0 and args[2] == 1):
+            self.sight = [args[1], args[2]]
             self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
                                   len(self.frames_run) / 10) % len(self.frames_run)
             self.image = self.frames_run[int(self.cur_frame_run)]
         elif args[1] == -1 or (args[1] == 0 and args[2] == -1):
+            self.sight = [args[1], args[2]]
             self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
                                   len(self.frames_run) / 10) % len(self.frames_run)
             self.image = pygame.transform.flip(self.frames_run[int(self.cur_frame_run)], True, False)
         else:
             self.cur_frame_run = 0
-            self.image = self.std_image
+            self.image = self.std_image if self.sight[0] != -1 else pygame.transform.flip(self.std_image, True, False)
 
 
-class BaseHero(pygame.sprite.Sprite):
-    def __init__(self, space, x, y, *groups, image=None):
-        super().__init__(*groups)
+class GameObject(pygame.sprite.Sprite):
+    def __init__(self, space, x, y):
+        super().__init__(space.all_sprites)
         self.gamespace = space
-        if image is None:
-            self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
-            self.image.fill(pygame.color.Color('purple'))
-        else:
-            self.image = image
-
+        self.image = pygame.Surface(size=(space.size_cell, space.size_cell))
+        self.image.fill(pygame.color.Color('purple'))
         self.true_x, self.true_y = space.size_cell * x, space.size_cell * y
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
+        print(f'create {self.__class__.__name__}(x={x}; y={y})') if DEBUG_INFO else None
+
+    def set_image(self, image):
+        '''Установка картинки'''
+        self.image = pygame.transform.scale(image, (self.gamespace.size_cell,
+                                                    self.gamespace.size_cell))
+
+    def set_pos(self, x, y):
+        '''Установка позиции'''
+        print(f'{self.__class__}.set_pos(x={x}, y={y})') if DEBUG_INFO else None
+        self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
+                                                               self.gamespace.size_cell * y)
+
+
+class BaseHero(GameObject):
+    '''
+    Базовый класс для персонажей
+    '''
+
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y)
         # Радиус подбора предметов
         self.take_radius = space.size_cell
         # Маска
@@ -826,7 +916,6 @@ class BaseHero(pygame.sprite.Sprite):
         self.things = {'cur_weapon': None, 'second_weapon': None,
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
-        self.sight = 'right'
         self._armor = 0  # Броня
         self.health = 100  # Здоровье
         self._sprint_speed = 2  # Скорость спринта
@@ -839,20 +928,17 @@ class BaseHero(pygame.sprite.Sprite):
 
         print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
 
-    def attack(self, pos):
+    def attack(self, target):
         '''Атака из текущего оружия'''
-        print(f'{self.__class__.__name__}().attack(pos={pos})') if DEBUG_INFO else None
+        print(f'{self.__class__.__name__}().attack(target={target})') if DEBUG_INFO else None
         weapon = self.things.get('cur_weapon')
         if weapon is None:
             return
         else:
-            weapon.attack(pos)
-
-    def set_pos(self, x, y):
-        '''Установка позиции'''
-        print(f'{self.__class__}.set_pos(x={x}, y={y})') if DEBUG_INFO else None
-        self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
-                                                               self.gamespace.size_cell * y)
+            if isinstance(target, self.__class__):
+                weapon.attack((target.rect.x, target.rect.y))
+            elif isinstance(target, tuple):
+                weapon.arrack(target)
 
     def half_damage(self, damage):
         '''Получение урона'''
@@ -893,6 +979,10 @@ class BaseHero(pygame.sprite.Sprite):
         self.things[thing.type] = thing
         return True
 
+    def get_distance(self, other):
+        '''Возвращает растояние между self и другого такого же объекта'''
+        return ((self.true_x - other.true_x) ** 2 + (self.true_y - other.true_y) ** 2) ** 0.5
+
     def armor(self):  # Кол-во брони  броня
         return sum(map(lambda key: self.things[key].armor if self.things.get(key) else 0,
                        self.things.keys())) + self._armor
@@ -920,6 +1010,42 @@ class BaseHero(pygame.sprite.Sprite):
     def get_moving(self, tick):  # Перемещение
         return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
 
+    def move_up(self, tick):
+        self.true_y -= self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.y = int(self.true_y)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
+
+    def move_down(self, tick):
+        self.true_y += self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.y = int(self.true_y)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.y = self.true_y = sprite_list[0].rect.y - self.rect.size[1]
+
+    def move_left(self, tick):
+        self.true_x -= self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.x = int(self.true_x)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
+
+    def move_right(self, tick):
+        self.true_x += self.get_moving(tick)  # Установка новых истенных координат
+        self.rect.x = int(self.true_x)  # Установка новых координат квадрата
+        # Получения списка стен с которыми персонаж пересёкся
+        sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
+        if sprite_list:
+            # Если было пересечение то перемещение песонажа на максимально маленькое растояние
+            self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
+
 
 class Player(BaseHero, AnimatedSpriteForHero):
     '''
@@ -927,81 +1053,140 @@ class Player(BaseHero, AnimatedSpriteForHero):
     '''
 
     def __init__(self, space, x, y):
-        image = pygame.transform.scale(space.game.load_image('player\std.png', -1), (space.size_cell, space.size_cell))
-        super().__init__(space, x, y, space.all_sprites, image=image)
-        sheet = pygame.transform.scale(self.gamespace.game.load_image('player\\animation run 10x1.png', -1),
-                                       (space.size_cell * 10, space.size_cell * 1))
-        self.init_animation(sheet, 10, 1)
+        super().__init__(space, x, y)
+        image = pygame.transform.scale(space.game.load_image('player\std.png', -1),
+                                       (space.size_cell, space.size_cell))
+        self.set_image(image)
+        sheet_animation_run = self.gamespace.game.load_image('player\\animation run 10x1.png', -1)
+        sheet_animation_run = pygame.transform.scale(sheet_animation_run, (space.size_cell * 10, space.size_cell * 1))
+        self.init_animation(sheet_animation_run, 10, 1)
 
     def update(self, *args):
-        pressed_keys = pygame.key.get_pressed()
-        move_kx = move_ky = 0
+        pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
+        move_kx = move_ky = 0  # Коэффициэты показывающие куда персонаж сходил
         if self.health <= 0:
             # Если здоровье падает до 0 и меньше то игра заканчивается
+            self.kill()
             self.gamespace.finish_game(message='Закончились жизни')
-
+            return
         if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
             # Движение вправо если нажата клавиша Right или D
-            self.true_x += self.get_moving(args[0])  # Установка новых истенных координат
-            self.rect.x = int(self.true_x)  # Установка новых координат квадрата
-            # Получения списка стен с которыми игрок пересёкся
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                # Если было пересечение то перемещение песонажа на максимально маленькое растояние
-                self.rect.x = self.true_x = sprite_list[0].rect.x - self.rect.size[0]
+            self.move_right(args[0])
             move_kx += 1
-
         if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
             # Движение влево если нажата клавиша Left или A
-            self.true_x -= self.get_moving(args[0])
-            self.rect.x = int(self.true_x)
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                self.rect.x = self.true_x = sprite_list[0].rect.x + sprite_list[0].rect.size[0]
+            self.move_left(args[0])
             move_kx -= 1
-
         if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
             # Движение вверх если нажата клавиша Up или W
-            self.true_y -= self.get_moving(args[0])
-            self.rect.y = int(self.true_y)
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                self.rect.y = self.true_y = sprite_list[0].rect.y + sprite_list[0].rect.size[1]
+            self.move_up(args[0])
             move_ky += 1
-
         if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
             # Движение вниз если нажата клавиша Down или S
-            self.true_y += self.get_moving(args[0])
-            self.rect.y = int(self.true_y)
-            sprite_list = pygame.sprite.spritecollide(self, self.gamespace.walls_group, False)
-            if sprite_list:
-                self.rect.y = self.true_y = sprite_list[0].rect.y - self.rect.size[1]
+            self.move_down(args[0])
             move_ky -= 1
-
+        # Обновление анимации
         self.update_animation(args[0], move_kx, move_ky, self.sprint_speed())
 
 
-class Wall(pygame.sprite.Sprite):
-    def __init__(self, space, x, y):
-        super().__init__(space.all_sprites, space.walls_group)
-        self.gamespace = space  # Подключение игрового пространства
-        # Создание изображения
-        self.image = pygame.transform.scale(space.game.load_image('wall\wall.jpg'), (space.size_cell, space.size_cell))
-        # Создание прямоукольника
-        self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
-        print(f'create Wall(x={x}, y={y})') if DEBUG_INFO else None
+class Enemy(BaseHero, AnimatedSpriteForHero):
+    '''
+    Класс врагов
+    '''
+
+    def __init__(self, space, x, y, level=None):
+        super().__init__(space, x, y)
+        image = pygame.transform.scale(space.game.load_image('enemy\goblin std2.png', -1),
+                                       (space.size_cell, space.size_cell))
+        self.set_image(image)
+        sheet = pygame.transform.scale(self.gamespace.game.load_image('enemy\\animation run 6x1.png', -1),
+                                       (space.size_cell * 6, space.size_cell * 1))
+        self.init_animation(sheet, 6, 1)
+        self.turn = []
+
+        self.activity = False
+
+        self.r_detection = space.size_cell * 3
+        self.attack_range = (space.size_cell * 1.5, space.size_cell * 2.5)
+
+        self._sprint_speed = 2
+
+    def ai(self, tick, target):
+        move_kx = move_ky = 0
+        if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
+            self.attack(target)
+        elif not self.attack_range[1] > self.get_distance(target):
+            if self.true_x < target.true_x:
+                self.move_right(tick)
+                move_kx += 1
+            if self.true_x > target.true_x:
+                self.move_left(tick)
+                move_kx -= 1
+            if self.true_y < target.true_y:
+                self.move_down(tick)
+                move_ky -= 1
+            if self.true_y > target.true_y:
+                self.move_up(tick)
+                move_ky += 1
+        elif not self.attack_range[0] < self.get_distance(target):
+            if self.true_x < target.true_x:
+                self.move_left(tick)
+                move_kx -= 1
+            if self.true_x > target.true_x:
+                self.move_right(tick)
+                move_kx += 1
+            if self.true_y > target.true_y:
+                self.move_down(tick)
+                move_ky -= 1
+            if self.true_y < target.true_y:
+                self.move_up(tick)
+                move_ky += 1
+        self.update_animation(tick, move_kx, move_ky, self.sprint_speed())
+
+    def update(self, *args):
+        if self.health <= 0:
+            return self.kill()
+        if self.activity:
+            self.ai(args[0], self.gamespace.player)
+        elif self.get_distance(self.gamespace.player) <= self.r_detection:
+            self.activity = True
+        else:
+            for enemy in self.gamespace.enemies_group.sprites():
+                if self.get_distance(enemy) <= self.r_detection and enemy.activity:
+                    self.activity = True
+                    break
 
 
-class Tile(pygame.sprite.Sprite):
+class Wall(GameObject):
+    '''
+    Класс стен
+    '''
+
     def __init__(self, space, x, y):
-        super().__init__(space.all_sprites, space.tiles_group)
-        self.gamespace = space  # Подключение игрового пространства
-        # Создание изображения
-        self.image = pygame.transform.scale(space.game.load_image('tile\\tile_1.png'),
-                                            (space.size_cell, space.size_cell))
-        # Создание прямоугольника
-        self.rect = self.image.get_rect().move(space.size_cell * x, space.size_cell * y)
-        print(f'create Tile(x={x}, y={y})') if DEBUG_INFO else None
+        super().__init__(space, x, y)
+        self.set_image(space.game.load_image('wall\wall.jpg'))
+        self.add(space.walls_group)
+
+
+class Tile(GameObject):
+    '''
+    Класс плиток
+    '''
+
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y)
+        self.set_image(space.game.load_image('tile\\tile_1.png'))
+        self.add(space.tiles_group)
+
+
+class TransitionalPortal(GameObject):
+    '''
+    Класс портала для перехода на новый уровень
+    '''
+
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y)
+        self.add(space.transitional_portal_group)
 
 
 class Item:
@@ -1023,9 +1208,8 @@ class Camera:
     def apply(self, obj):
         obj.rect.x += self.dx
         obj.rect.y += self.dy
-        if isinstance(obj, BaseHero):
-            obj.true_x += self.dx
-            obj.true_y += self.dy
+        obj.true_x += self.dx
+        obj.true_y += self.dy
 
     # позиционировать камеру на объекте target
     def update(self, target):
