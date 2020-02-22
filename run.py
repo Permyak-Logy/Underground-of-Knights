@@ -354,7 +354,7 @@ class GameExample:
         logo_PyPLy = pygame.transform.scale(logo_PyPLy,
                                             (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
                                              int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
-#
+        #
         logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
         logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
                                                 (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
@@ -466,6 +466,7 @@ class GameSpace:
         self.tiles_group = pygame.sprite.Group()  # Спрайты земли
         self.items_group = pygame.sprite.Group()  # Спрайты вещей
         self.transitional_portal_group = pygame.sprite.Group()  # Спрайт выхода
+        self.bullets_group = pygame.sprite.Group()
 
         self.player = None  # Создание игрока
         self.clock = None  # Создание игрового времени
@@ -480,6 +481,7 @@ class GameSpace:
         self.items_group.draw(screen)
         self.player_group.draw(screen)
         self.enemies_group.draw(screen)
+        self.bullets_group.draw(screen)
 
         for punkt in self.punkts:
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
@@ -551,7 +553,7 @@ class GameSpace:
         if cur_weapon is not None:
             image_cur_weapon = pygame.Surface(size=cur_weapon_punkt.get_size())
             pygame.draw.rect(image_cur_weapon, pygame.color.Color('green'), (0, 0, *cur_weapon_punkt.get_size()), 2)
-            image_cur_weapon.blit(cur_weapon.image)
+            image_cur_weapon.blit(cur_weapon.icon_image, (0, 0))
             cur_weapon_punkt.set_image(image_cur_weapon)
             cur_weapon_punkt.show()
         else:
@@ -564,7 +566,7 @@ class GameSpace:
             image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
             pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()),
                              2)
-            image_second_weapon.blit(second_weapon.image)
+            image_second_weapon.blit(second_weapon.icon_image, (0, 0))
             second_weapon_punkt.set_image(image_second_weapon)
             second_weapon_punkt.show()
         else:
@@ -652,7 +654,9 @@ class GameSpace:
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
-
+        Item(self, 3, 3).add(self.items_group)
+        Item(self, 3, 5).add(self.items_group)
+        Item(self, 3, 2).add(self.items_group)
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -689,6 +693,7 @@ class GameSpace:
         self.tiles_group.empty()
         self.player_group.empty()
         self.transitional_portal_group.empty()
+        self.bullets_group.empty()
 
     def get_punkt(self, number):
         '''Возвращает пункт по заданному номеру'''
@@ -900,6 +905,9 @@ class GameObject(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = self.true_x, self.true_y = (self.gamespace.size_cell * x,
                                                                self.gamespace.size_cell * y)
 
+    def set_coordinates(self, x, y):
+        self.rect.x, self.rect.y = self.true_x, self.true_y = x, y
+
 
 class BaseHero(GameObject):
     '''
@@ -909,7 +917,7 @@ class BaseHero(GameObject):
     def __init__(self, space, x, y):
         super().__init__(space, x, y)
         # Радиус подбора предметов
-        self.take_radius = space.size_cell
+        self.take_radius = space.size_cell * 1.046
         # Маска
         self.mask = pygame.mask.from_surface(self.image)
         # Предметы персонажа
@@ -938,7 +946,7 @@ class BaseHero(GameObject):
             if isinstance(target, self.__class__):
                 weapon.attack((target.rect.x, target.rect.y))
             elif isinstance(target, tuple):
-                weapon.arrack(target)
+                weapon.attack(target)
 
     def half_damage(self, damage):
         '''Получение урона'''
@@ -964,19 +972,26 @@ class BaseHero(GameObject):
         thing = None
         for elem in self.gamespace.items_group.sprites():
             if elem.rect.collidepoint(pos):
-                thing = elem
+                if not elem.is_taken:
+                    thing = elem
+                    break
         if thing is None:
             return False
         if not ((self.rect.x - thing.rect.x) ** 2 + (self.rect.y - thing.rect.y) ** 2) ** 0.5 < self.take_radius:
             return False
-        if thing.type == 'weapon':
+        if thing.type_item == 'weapon':
             if self.things['cur_weapon'] is None:
                 self.things['cur_weapon'] = thing
             elif self.things['second_weapon'] is None:
                 self.things['second_weapon'] = thing
             else:
+                old_thing = self.things["cur_weapon"]
                 self.things['cur_weapon'] = thing
-        self.things[thing.type] = thing
+                old_thing.put(self.rect.x, self.rect.y)
+
+        else:
+            self.things[thing.type_item] = thing
+        thing.set_taken()
         return True
 
     def get_distance(self, other):
@@ -988,24 +1003,12 @@ class BaseHero(GameObject):
                        self.things.keys())) + self._armor
 
     def sprint_speed(self):  # Скорость спринта
-        return sum(map(lambda key: self.things[key].speed if self.things.get(key) else 0,
+        return sum(map(lambda key: self.things[key].sprint_speed if self.things.get(key) else 0,
                        self.things.keys())) + self._sprint_speed
-
-    def strength(self):  # Сила
-        return sum(map(lambda key: self.things[key].strength if self.things.get(key) else 0,
-                       self.things.keys())) + self._strength
-
-    def radius(self):  # Радиус
-        return sum(map(lambda key: self.things[key].radius if self.things.get(key) else 0,
-                       self.things.keys())) + self._radius
 
     def energy_efficiency(self):  # Энергоэфективность
         return sum(map(lambda key: self.things[key].energy_efficiency if self.things.get(key) else 0,
                        self.things.keys())) + self._energy_efficiency
-
-    def duration(self):  # Длительность
-        return sum(map(lambda key: self.things[key].duration if self.things.get(key) else 0,
-                       self.things.keys())) + self._duration
 
     def get_moving(self, tick):  # Перемещение
         return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
@@ -1060,6 +1063,8 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet_animation_run = self.gamespace.game.load_image('player\\animation run 10x1.png', -1)
         sheet_animation_run = pygame.transform.scale(sheet_animation_run, (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet_animation_run, 10, 1)
+
+        self._sprint_speed = 5
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
@@ -1189,14 +1194,6 @@ class TransitionalPortal(GameObject):
         self.add(space.transitional_portal_group)
 
 
-class Item:
-    pass
-
-
-class Weapon(Item):
-    pass
-
-
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self, gamespace):
@@ -1215,6 +1212,47 @@ class Camera:
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - self.gamespace.game.width // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - self.gamespace.game.height // 2)
+
+
+class Item(GameObject):
+    def __init__(self, gamespace, x, y):
+        super().__init__(gamespace, x, y)
+        self.image.fill((rd(0, 255), rd(0, 255), rd(0, 255)))
+        self.icon_image = self.image.copy()
+        self.type_item = "weapon"
+        self.armor = 0
+        self.energy_efficiency = 0
+        self.sprint_speed = 0
+        self.is_taken = False
+
+    def set_taken(self):
+        self.is_taken = True
+        image = pygame.Surface(size=(10, 10))
+        image.set_colorkey(image.get_at((0, 0)))
+        self.image = image.convert_alpha()
+
+    def put(self, x, y):
+        self.is_taken = False
+        self.image = self.icon_image
+        self.set_coordinates(x, y)
+
+    def attack(self, *args, **kwargs):
+        pass
+
+
+class Weapon(Item):
+    def __init__(self, gamespace, x, y, name, damage=1, weapon_type='melee', weapon_range=1, weapon_rapidity=2,
+                 weapon=True):
+        super().__init__(gamespace, x, y)
+        self.damage, self.weapon_range, self.weapon_type, self.weapon_rapidity = damage, weapon_range, weapon_type, weapon_rapidity
+
+    def attack(self, x, y, x_cur, y_cur):
+        Bullet(self.gamespace, (x, y), (x_cur, y_cur))
+
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, gamespace, pos_start, pos_finish):
+        super().__init__(gamespace.all_sprites, gamespace.bullets_group)
 
 
 if __name__ == '__main__':
