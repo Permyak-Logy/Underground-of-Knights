@@ -26,7 +26,7 @@ class SettingsWindow(QMainWindow, Ui_MainWindow):
             os.system("python run.py")
         elif os.access("Underground of Knights.exe", os.F_OK):
             os.startfile('Underground of Knights.exe')
-        self.close()
+        self.show()
 
     def open_main_menu(self):
         for row in range(self.gridLayoutSettings.rowCount()):
