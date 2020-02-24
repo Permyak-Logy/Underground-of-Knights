@@ -658,9 +658,8 @@ class GameSpace:
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
-        Weapon(self, 3, 3, "ПОСОХ")  # .add(self.items_group)
-        Weapon(self, 3, 5, "ПАЛКА")  # .add(self.items_group)
-        Weapon(self, 3, 2, "КРЮКА")  # .add(self.items_group)
+        StdItems.WeaponStaff(self, 3, 3)  # .add(self.items_group)
+        Weapon(self, 3, 5, "Test")
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -900,8 +899,7 @@ class GameObject(pygame.sprite.Sprite):
 
     def set_image(self, image):
         '''Установка картинки'''
-        self.image = pygame.transform.scale(image, (self.gamespace.size_cell,
-                                                    self.gamespace.size_cell))
+        self.image = pygame.transform.scale(image, (self.rect.width, self.rect.height))
 
     def set_pos(self, x, y):
         '''Установка позиции'''
@@ -1221,7 +1219,7 @@ class Camera:
 class Item(GameObject):
     def __init__(self, gamespace, x, y):
         super().__init__(gamespace, x, y)
-        default_image = pygame.Surface(size=(gamespace.size_cell // 2, gamespace.size_cell // 2))
+        default_image = pygame.Surface(size=[gamespace.size_cell // 1.5] * 2)
         default_image.fill(pygame.color.Color('purple'))
         self.image = default_image
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
@@ -1233,6 +1231,10 @@ class Item(GameObject):
         self.energy_efficiency = 0
         self.sprint_speed = 0
         self.is_taken = False
+
+    def set_image(self, image):
+        super().set_image(image)
+        self.icon_image = self.image
 
     def set_taken(self):
         self.is_taken = True
@@ -1269,14 +1271,29 @@ class Bullet(GameObject):
         default_image = pygame.Surface(size=[gamespace.size_cell // 4] * 2)
         default_image.fill(pygame.color.Color("red"))
         self.image = default_image
-        self.rect = self.image.get_rect().move(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
-                                               sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+        self.rect = self.image.get_rect().move(
+            sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+            sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
         self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
                              sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
         self.add(gamespace.bullets_group)
 
         self.sender = sender
         self.k_speed = k_speed
+
+
+class StdBullets:
+    class BlueBall(Bullet):
+        def __init__(self, gamespace, sender, pos_finish):
+            super().__init__(gamespace, sender, pos_finish)
+            self.set_image(gamespace.game.load_image("bullet\\blue ball.png", -1))
+
+
+class StdItems:
+    class WeaponStaff(Weapon):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y, "Посох", damage=10, bullet=StdBullets.BlueBall)
+            self.set_image(gamespace.game.load_image("weapon\\staff.png", -1))
 
 
 if __name__ == '__main__':
