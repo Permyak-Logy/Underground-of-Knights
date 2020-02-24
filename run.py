@@ -9,7 +9,7 @@ from math import sin, cos, atan, degrees
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
-DEBUG_INFO = True  # Флаг доп. информации в консоли
+DEBUG_INFO = False  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -947,8 +947,8 @@ class BaseHero(GameObject):
         if weapon is None:
             return
         else:
-            if isinstance(target, self.__class__):
-                weapon.attack(self, target.rect.x, target.rect.y)
+            if isinstance(target, BaseHero):
+                weapon.attack(self, target.rect.x + target.rect.width / 2, target.rect.y + target.rect.height / 2)
             elif isinstance(target, tuple):
                 weapon.attack(self, *target)
 
@@ -1120,6 +1120,10 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
 
         self._sprint_speed = 2
 
+        weapon = StdItems.WeaponStaff(space, x, y)
+        self.things["cur_weapon"] = weapon
+        weapon.set_taken()
+
     def ai(self, tick, target):
         move_kx = move_ky = 0
         if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
@@ -1262,13 +1266,13 @@ class Weapon(Item):
 
     def attack(self, sender, x_cur, y_cur):
         if self.bullet is None:
-            Bullet(self.gamespace, sender, (x_cur, y_cur))
+            Bullet(self.gamespace, sender, (x_cur, y_cur), self.damage)
         else:
-            self.bullet(self.gamespace, sender, (x_cur, y_cur))
+            self.bullet(self.gamespace, sender, (x_cur, y_cur), self.damage)
 
 
 class Bullet(GameObject):
-    def __init__(self, gamespace, sender, pos_finish, k_speed=1):
+    def __init__(self, gamespace, sender, pos_finish, damage, k_speed=1):
         super().__init__(gamespace, 0, 0)
         default_image = pygame.Surface(size=[gamespace.size_cell // 4] * 2)
         default_image.fill(pygame.color.Color("red"))
@@ -1280,6 +1284,7 @@ class Bullet(GameObject):
                              sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
         self.add(gamespace.bullets_group)
 
+        self.damage = damage
         self.sender = sender
         self.k_speed = k_speed
         self.angle = atan(((pos_finish[1] - self.image.get_width() / 2) - self.true_y) /
@@ -1294,13 +1299,21 @@ class Bullet(GameObject):
         self.true_x += args[0] / 1000 * self.gamespace.size_cell * self.vx * self.k_speed
         self.true_y += args[0] / 1000 * self.gamespace.size_cell * self.vy * self.k_speed
         self.rect.x, self.rect.y = int(self.true_x), int(self.true_y)
-
+        heroes = pygame.sprite.spritecollide(self, self.gamespace.enemies_group, False) + \
+                  pygame.sprite.spritecollide(self, self.gamespace.player_group, False)
+        heroes.remove(self.sender) if self.sender in heroes else None
+        if heroes:
+            for sprite in heroes:
+                sprite.half_damage(self.damage)
+            self.kill()
+        elif pygame.sprite.spritecollideany(self, self.gamespace.walls_group, False):
+            self.kill()
 
 
 class StdBullets:
     class BlueBall(Bullet):
-        def __init__(self, gamespace, sender, pos_finish):
-            super().__init__(gamespace, sender, pos_finish, 3)
+        def __init__(self, gamespace, sender, pos_finish, damage):
+            super().__init__(gamespace, sender, pos_finish, damage, 3)
             default_image = pygame.Surface(size=[gamespace.size_cell // 8] * 2)
             default_image.fill(pygame.color.Color("red"))
             self.image = default_image
@@ -1315,7 +1328,7 @@ class StdBullets:
 class StdItems:
     class WeaponStaff(Weapon):
         def __init__(self, gamespace, x, y):
-            super().__init__(gamespace, x, y, "Посох", damage=10, bullet=StdBullets.BlueBall)
+            super().__init__(gamespace, x, y, "Посох", damage=1, bullet=StdBullets.BlueBall)
             self.set_image(gamespace.game.load_image("weapon\\staff.png", -1))
 
 
