@@ -5,6 +5,7 @@ from win32api import GetSystemMetrics
 from random import randint as rd
 from settings_launcher import SettingsWindow, QApplication
 from random import randint
+from math import sin, cos, atan, degrees
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
@@ -624,6 +625,7 @@ class GameSpace:
             return
         self.player_group.update(tick)  # Обновление персонажа
         self.enemies_group.update(tick)
+        self.bullets_group.update(tick)
 
         self.update_interface()  # Обновление интерфейса
 
@@ -1280,12 +1282,33 @@ class Bullet(GameObject):
 
         self.sender = sender
         self.k_speed = k_speed
+        self.angle = atan(((pos_finish[1] - self.image.get_width() / 2) - self.true_y) /
+                          ((pos_finish[0] - self.image.get_height() / 2) - self.true_x))
+        self.vx = cos(self.angle)
+        self.vy = sin(self.angle)
+        if pos_finish[0] - self.image.get_width() / 2 < self.true_x:
+            self.vx *= -1
+            self.vy *= -1
+
+    def update(self, *args):
+        self.true_x += args[0] / 1000 * self.gamespace.size_cell * self.vx * self.k_speed
+        self.true_y += args[0] / 1000 * self.gamespace.size_cell * self.vy * self.k_speed
+        self.rect.x, self.rect.y = int(self.true_x), int(self.true_y)
+
 
 
 class StdBullets:
     class BlueBall(Bullet):
         def __init__(self, gamespace, sender, pos_finish):
-            super().__init__(gamespace, sender, pos_finish)
+            super().__init__(gamespace, sender, pos_finish, 3)
+            default_image = pygame.Surface(size=[gamespace.size_cell // 8] * 2)
+            default_image.fill(pygame.color.Color("red"))
+            self.image = default_image
+            self.rect = self.image.get_rect().move(
+                sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+            self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                                 sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
             self.set_image(gamespace.game.load_image("bullet\\blue ball.png", -1))
 
 
