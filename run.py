@@ -201,11 +201,11 @@ class GameExample:
 
         # Изображение текущего оружия
         label_cur_weapon = Punkt(text='test', pos=(int(self.width * 0.05), int(self.height * 0.6)),
-                                 size=size, show_background=False,
+                                 size=size, show_background=False, color_text=_Color("white"),
                                  number=8)  # func=self.game_space.player.change_weapons  # Привязывается после new_game
         # Изображение второго оружия
         label_second_weapon = Punkt(text='test2', pos=(int(self.width * 0.05), int(self.height * 0.75)),
-                                    size=size, show_background=False,
+                                    size=size, show_background=False, color_text=_Color("white"),
                                     number=9)  # func=self.game_space.player.change_weapons
 
         # Размеры полосок здоровья и щитов
@@ -553,8 +553,10 @@ class GameSpace:
         if cur_weapon is not None:
             image_cur_weapon = pygame.Surface(size=cur_weapon_punkt.get_size())
             pygame.draw.rect(image_cur_weapon, pygame.color.Color('green'), (0, 0, *cur_weapon_punkt.get_size()), 2)
-            image_cur_weapon.blit(cur_weapon.icon_image, (0, 0))
+            image_cur_weapon.blit(pygame.transform.scale(
+                cur_weapon.icon_image, (image_cur_weapon.get_width(), image_cur_weapon.get_height())), (0, 0))
             cur_weapon_punkt.set_image(image_cur_weapon)
+            cur_weapon_punkt.set_text(cur_weapon.weapon_name)
             cur_weapon_punkt.show()
         else:
             cur_weapon_punkt.hide()
@@ -566,8 +568,10 @@ class GameSpace:
             image_second_weapon = pygame.Surface(size=second_weapon_punkt.get_size())
             pygame.draw.rect(image_second_weapon, pygame.color.Color('gray'), (0, 0, *second_weapon_punkt.get_size()),
                              2)
-            image_second_weapon.blit(second_weapon.icon_image, (0, 0))
+            image_second_weapon.blit(pygame.transform.scale(
+                second_weapon.icon_image, (image_second_weapon.get_width(), image_second_weapon.get_height())), (0, 0))
             second_weapon_punkt.set_image(image_second_weapon)
+            second_weapon_punkt.set_text(second_weapon.weapon_name)
             second_weapon_punkt.show()
         else:
             second_weapon_punkt.hide()
@@ -654,9 +658,9 @@ class GameSpace:
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
-        Item(self, 3, 3).add(self.items_group)
-        Item(self, 3, 5).add(self.items_group)
-        Item(self, 3, 2).add(self.items_group)
+        Weapon(self, 3, 3, "ПОСОХ")  # .add(self.items_group)
+        Weapon(self, 3, 5, "ПАЛКА")  # .add(self.items_group)
+        Weapon(self, 3, 2, "КРЮКА")  # .add(self.items_group)
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -944,9 +948,9 @@ class BaseHero(GameObject):
             return
         else:
             if isinstance(target, self.__class__):
-                weapon.attack((target.rect.x, target.rect.y))
+                weapon.attack(self, target.rect.x, target.rect.y)
             elif isinstance(target, tuple):
-                weapon.attack(target)
+                weapon.attack(self, *target)
 
     def half_damage(self, damage):
         '''Получение урона'''
@@ -1217,9 +1221,14 @@ class Camera:
 class Item(GameObject):
     def __init__(self, gamespace, x, y):
         super().__init__(gamespace, x, y)
-        self.image.fill((rd(0, 255), rd(0, 255), rd(0, 255)))
+        default_image = pygame.Surface(size=(gamespace.size_cell // 2, gamespace.size_cell // 2))
+        default_image.fill(pygame.color.Color('purple'))
+        self.image = default_image
+        self.rect = self.image.get_rect().move(self.true_x, self.true_y)
+        self.add(gamespace.items_group)
+
         self.icon_image = self.image.copy()
-        self.type_item = "weapon"
+        self.type_item = "none"
         self.armor = 0
         self.energy_efficiency = 0
         self.sprint_speed = 0
@@ -1236,23 +1245,38 @@ class Item(GameObject):
         self.image = self.icon_image
         self.set_coordinates(x, y)
 
-    def attack(self, *args, **kwargs):
-        pass
-
 
 class Weapon(Item):
     def __init__(self, gamespace, x, y, name, damage=1, weapon_type='melee', weapon_range=1, weapon_rapidity=2,
-                 weapon=True):
+                 bullet=None):
         super().__init__(gamespace, x, y)
-        self.damage, self.weapon_range, self.weapon_type, self.weapon_rapidity = damage, weapon_range, weapon_type, weapon_rapidity
+        self.type_item = "weapon"
+        self.weapon_name = name
+        self.damage, self.weapon_range = damage, weapon_range
+        self.weapon_type, self.weapon_rapidity = weapon_type, weapon_rapidity
+        self.bullet = bullet
 
-    def attack(self, x, y, x_cur, y_cur):
-        Bullet(self.gamespace, (x, y), (x_cur, y_cur))
+    def attack(self, sender, x_cur, y_cur):
+        if self.bullet is None:
+            Bullet(self.gamespace, sender, (x_cur, y_cur))
+        else:
+            self.bullet(self.gamespace, sender, (x_cur, y_cur))
 
 
-class Bullet(pygame.sprite.Sprite):
-    def __init__(self, gamespace, pos_start, pos_finish):
-        super().__init__(gamespace.all_sprites, gamespace.bullets_group)
+class Bullet(GameObject):
+    def __init__(self, gamespace, sender, pos_finish, k_speed=1):
+        super().__init__(gamespace, 0, 0)
+        default_image = pygame.Surface(size=[gamespace.size_cell // 4] * 2)
+        default_image.fill(pygame.color.Color("red"))
+        self.image = default_image
+        self.rect = self.image.get_rect().move(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                                               sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+        self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                             sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+        self.add(gamespace.bullets_group)
+
+        self.sender = sender
+        self.k_speed = k_speed
 
 
 if __name__ == '__main__':
