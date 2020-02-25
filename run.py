@@ -625,6 +625,7 @@ class GameSpace:
             return
         self.player_group.update(tick)  # Обновление персонажа
         self.enemies_group.update(tick)
+        self.items_group.update(tick)
         self.bullets_group.update(tick)
 
         self.update_interface()  # Обновление интерфейса
@@ -660,8 +661,10 @@ class GameSpace:
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
-        StdItems.WeaponStaff(self, 3, 3)  # .add(self.items_group)
-        Weapon(self, 3, 5, "Test")
+        for elem in self.player.things.values():
+            if elem is not None:
+                elem.add(self.items_group)
+        StdItems.WeaponStaff(self, 3, 3)
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -1167,6 +1170,12 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
             for enemy in self.gamespace.enemies_group.sprites():
                 if self.get_distance(enemy) <= self.r_detection and enemy.activity:
                     self.activity = True
+                if self.activity:
+                    break
+            for bullet in self.gamespace.bullets_group.sprites():
+                if self.get_distance(bullet) <= self.r_detection:
+                    self.activity = True
+                if self.activity:
                     break
 
 
@@ -1255,20 +1264,30 @@ class Item(GameObject):
 
 
 class Weapon(Item):
-    def __init__(self, gamespace, x, y, name, damage=1, weapon_type='melee', weapon_range=1, weapon_rapidity=2,
-                 bullet=None):
+    def __init__(self, gamespace, x, y, name, damage=1, speed_attack=1, weapon_type='melee', weapon_range=1,
+                 weapon_rapidity=2, bullet=None):
         super().__init__(gamespace, x, y)
         self.type_item = "weapon"
         self.weapon_name = name
         self.damage, self.weapon_range = damage, weapon_range
         self.weapon_type, self.weapon_rapidity = weapon_type, weapon_rapidity
         self.bullet = bullet
+        self.attack_readiness = 1
+        self.speed_attack = speed_attack
 
     def attack(self, sender, x_cur, y_cur):
-        if self.bullet is None:
+        if self.attack_readiness < 1:
+            return
+        elif self.bullet is None:
             Bullet(self.gamespace, sender, (x_cur, y_cur), self.damage)
         else:
             self.bullet(self.gamespace, sender, (x_cur, y_cur), self.damage)
+        self.attack_readiness = 0
+
+    def update(self, *args):
+        self.attack_readiness += self.speed_attack * args[0] / 1000
+        if self.attack_readiness > 1:
+            self.attack_readiness = 1
 
 
 class Bullet(GameObject):
@@ -1300,7 +1319,7 @@ class Bullet(GameObject):
         self.true_y += args[0] / 1000 * self.gamespace.size_cell * self.vy * self.k_speed
         self.rect.x, self.rect.y = int(self.true_x), int(self.true_y)
         heroes = pygame.sprite.spritecollide(self, self.gamespace.enemies_group, False) + \
-                  pygame.sprite.spritecollide(self, self.gamespace.player_group, False)
+                 pygame.sprite.spritecollide(self, self.gamespace.player_group, False)
         heroes.remove(self.sender) if self.sender in heroes else None
         if heroes:
             for sprite in heroes:
@@ -1308,6 +1327,13 @@ class Bullet(GameObject):
             self.kill()
         elif pygame.sprite.spritecollideany(self, self.gamespace.walls_group, False):
             self.kill()
+
+
+class StdItems:
+    class WeaponStaff(Weapon):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y, "Посох", damage=50, speed_attack=10, bullet=StdBullets.BlueBall)
+            self.set_image(gamespace.game.load_image("weapon\\staff.png", -1))
 
 
 class StdBullets:
@@ -1323,13 +1349,6 @@ class StdBullets:
             self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
                                  sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
             self.set_image(gamespace.game.load_image("bullet\\blue ball.png", -1))
-
-
-class StdItems:
-    class WeaponStaff(Weapon):
-        def __init__(self, gamespace, x, y):
-            super().__init__(gamespace, x, y, "Посох", damage=1, bullet=StdBullets.BlueBall)
-            self.set_image(gamespace.game.load_image("weapon\\staff.png", -1))
 
 
 if __name__ == '__main__':
