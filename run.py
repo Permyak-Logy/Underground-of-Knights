@@ -3,6 +3,7 @@ import os
 import sys
 from win32api import GetSystemMetrics
 from random import randint as rd
+from random import choice
 from settings_launcher import SettingsWindow, QApplication
 from random import randint
 from math import sin, cos, atan, degrees
@@ -77,7 +78,6 @@ class GameExample:
             self.main_screen.blit(pygame.font.Font(None, 20).render(
                 f'fps: {round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME is not None else "---"}', 0,
                 (255, 255, 255)), (0, 0))
-
             # Обновление дисплея
             pygame.display.flip()
 
@@ -284,8 +284,13 @@ class GameExample:
             elif event.key == pygame.K_ESCAPE:
                 # Открытие меню при нажатии на Escape
                 self.open_menu()
-            elif event.key == pygame.K_f:
+            elif event.key == pygame.K_q:
                 self.game_space.player.change_weapons()
+            elif event.key == pygame.K_z:
+                old_thing = self.game_space.player.things.get("armor")
+                if old_thing is not None:
+                    self.game_space.player.things["armor"] = None
+                    old_thing.put(self.game_space.player.rect.x, self.game_space.player.rect.y)
 
     def start_game(self):
         '''Начать игру'''
@@ -507,7 +512,7 @@ class GameSpace:
         print(f'{self.__class__}.new_game()') if DEBUG_INFO else None
 
         self.levels.clear()
-        self.load_levels('test')
+        self.load_levels('test2')
         self.player = Player(self, 0, 0)
 
         # Подключение функций персонажа и его показателей к пунктам:
@@ -612,7 +617,7 @@ class GameSpace:
         armor_punkt.set_text(f'Armor: {round(self.player.armor())}')
 
         sprint_punkt = self.get_punkt(14)
-        sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed())}')
+        sprint_punkt.set_text(f'Sprint: {round(self.player.sprint_speed(), 1)}')
 
         label_level = self.get_punkt(15)
         label_level.set_text(f'Level {label_level.number_level}')
@@ -658,13 +663,24 @@ class GameSpace:
                     Enemy(self, x, y).add(self.enemies_group)
                 if obj == 'E':
                     TransitionalPortal(self, x, y)
+                if obj == 'T':
+                    choice(StdItems.all_items)(self, x, y)
+                if obj == 'W':
+                    choice(StdItems.all_weapons)(self, x, y)
+                if obj == 'A':
+                    choice(StdItems.all_armors)(self, x, y)
                 if obj == '@':
                     self.player.set_pos(x, y)
                     self.player.add(self.player_group, self.all_sprites)
         for elem in self.player.things.values():
             if elem is not None:
                 elem.add(self.items_group)
-        StdItems.WeaponStaff(self, 3, 3)
+        # StdItems.WeaponStaff(self, 5, 4)
+        # StdItems.WeaponShuriken(self, 6, 4)
+        # StdItems.WeaponPistol(self, 7, 4)
+        # StdItems.HeavyArmor(self, 5, 5)
+        # StdItems.MediumArmor(self, 6, 5)
+        # StdItems.LightArmor(self, 7, 5)
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -931,15 +947,15 @@ class BaseHero(GameObject):
         self.things = {'cur_weapon': None, 'second_weapon': None,
                        'helmet': None, 'vest': None, 'boots': None,
                        'amulet': None}
+        self.readiness_recovery_shields = 1  # Готовность к востановлению щитов
+        self.readiness_recovery_energy = 1  # Готовность к востановлению энэргии
+        self.v_recovery_shiels = 10
+        self.v_recovery_enegry = 15
         self._armor = 0  # Броня
-        self.health = 100  # Здоровье
-        self._sprint_speed = 2  # Скорость спринта
-        self.shields = 100  # Щиты
-        self.energy = 100  # Энергия
-        self._strength = 1  # Сила
-        self._radius = 1  # Радиус
-        self._energy_efficiency = 1  # Энергоэфективность
-        self._duration = 1  # Длительность
+        self.health = self.max_health = 100  # Здоровье
+        self._sprint_speed = 4  # Скорость спринта
+        self.shields = self.max_shields = 100  # Щиты
+        self.energy = self.max_energy = 100  # Энергия
 
         print(f'create {self.__class__.__name__}(x={x}, y={y})') if DEBUG_INFO else None
 
@@ -966,6 +982,7 @@ class BaseHero(GameObject):
             self.health -= damage
         else:
             self.shields -= damage
+        self.readiness_recovery_shields = 0
 
     def change_weapons(self):
         '''Смена оружия'''
@@ -997,6 +1014,9 @@ class BaseHero(GameObject):
                 old_thing.put(self.rect.x, self.rect.y)
 
         else:
+            old_thing = self.things.get(thing.type_item)
+            if old_thing is not None:
+                old_thing.put(self.rect.x, self.rect.y)
             self.things[thing.type_item] = thing
         thing.set_taken()
         return True
@@ -1012,10 +1032,6 @@ class BaseHero(GameObject):
     def sprint_speed(self):  # Скорость спринта
         return sum(map(lambda key: self.things[key].sprint_speed if self.things.get(key) else 0,
                        self.things.keys())) + self._sprint_speed
-
-    def energy_efficiency(self):  # Энергоэфективность
-        return sum(map(lambda key: self.things[key].energy_efficiency if self.things.get(key) else 0,
-                       self.things.keys())) + self._energy_efficiency
 
     def get_moving(self, tick):  # Перемещение
         return tick * self.gamespace.size_cell * self.sprint_speed() / 1000
@@ -1071,8 +1087,6 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet_animation_run = pygame.transform.scale(sheet_animation_run, (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet_animation_run, 10, 1)
 
-        self._sprint_speed = 5
-
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
         move_kx = move_ky = 0  # Коэффициэты показывающие куда персонаж сходил
@@ -1100,6 +1114,20 @@ class Player(BaseHero, AnimatedSpriteForHero):
         # Обновление анимации
         self.update_animation(args[0], move_kx, move_ky, self.sprint_speed())
 
+        if self.readiness_recovery_shields < 1:
+            self.readiness_recovery_shields += args[0] / 1000 * (1 / 3)
+        else:
+            self.shields += self.v_recovery_shiels * args[0] / 1000
+            if self.shields > self.max_shields:
+                self.shields = self.max_shields
+
+        if self.readiness_recovery_energy < 1:
+            self.readiness_recovery_energy += args[0] / 1000 * 2
+        else:
+            self.energy += self.v_recovery_enegry * args[0] / 1000
+            if self.energy > self.max_energy:
+                self.energy = self.max_energy
+
 
 class Enemy(BaseHero, AnimatedSpriteForHero):
     '''
@@ -1121,11 +1149,13 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         self.r_detection = space.size_cell * 3
         self.attack_range = (space.size_cell * 1.5, space.size_cell * 2.5)
 
-        self._sprint_speed = 2
-
-        weapon = StdItems.WeaponStaff(space, x, y)
+        weapon = choice(StdItems.all_weapons)(space, x, y)
         self.things["cur_weapon"] = weapon
         weapon.set_taken()
+
+        armor = choice(StdItems.all_armors)(space, x, y)
+        self.things[armor.type_item] = armor
+        armor.set_taken()
 
     def ai(self, tick, target):
         move_kx = move_ky = 0
@@ -1177,6 +1207,19 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
                     self.activity = True
                 if self.activity:
                     break
+        if self.readiness_recovery_shields < 1:
+            self.readiness_recovery_shields += args[0] / 1000 * (1 / 3)
+        else:
+            self.shields += self.v_recovery_shiels * args[0] / 1000
+            if self.shields > self.max_shields:
+                self.shields = self.max_shields
+
+        if self.readiness_recovery_energy < 1:
+            self.readiness_recovery_energy += args[0] / 1000 * 2
+        else:
+            self.energy += self.v_recovery_enegry * args[0] / 1000
+            if self.energy > self.max_energy:
+                self.energy = self.max_energy
 
 
 class Wall(GameObject):
@@ -1265,7 +1308,7 @@ class Item(GameObject):
 
 class Weapon(Item):
     def __init__(self, gamespace, x, y, name, damage=1, speed_attack=1, weapon_type='melee', weapon_range=1,
-                 weapon_rapidity=2, bullet=None):
+                 weapon_rapidity=2, bullet=None, energy_requirement=1):
         super().__init__(gamespace, x, y)
         self.type_item = "weapon"
         self.weapon_name = name
@@ -1274,15 +1317,21 @@ class Weapon(Item):
         self.bullet = bullet
         self.attack_readiness = 1
         self.speed_attack = speed_attack
+        self.energy_efficiency = energy_requirement
 
     def attack(self, sender, x_cur, y_cur):
+        if sender.energy < self.energy_efficiency:
+            return
         if self.attack_readiness < 1:
             return
-        elif self.bullet is None:
+        if self.bullet is None:
             Bullet(self.gamespace, sender, (x_cur, y_cur), self.damage)
         else:
             self.bullet(self.gamespace, sender, (x_cur, y_cur), self.damage)
+
         self.attack_readiness = 0
+        sender.energy -= self.energy_efficiency
+        sender.readiness_recovery_energy = 0
 
     def update(self, *args):
         self.attack_readiness += self.speed_attack * args[0] / 1000
@@ -1318,8 +1367,10 @@ class Bullet(GameObject):
         self.true_x += args[0] / 1000 * self.gamespace.size_cell * self.vx * self.k_speed
         self.true_y += args[0] / 1000 * self.gamespace.size_cell * self.vy * self.k_speed
         self.rect.x, self.rect.y = int(self.true_x), int(self.true_y)
-        heroes = pygame.sprite.spritecollide(self, self.gamespace.enemies_group, False) + \
-                 pygame.sprite.spritecollide(self, self.gamespace.player_group, False)
+        heroes = ((pygame.sprite.spritecollide(self, self.gamespace.enemies_group, False)
+                   if self.sender not in self.gamespace.enemies_group else []) +
+                  (pygame.sprite.spritecollide(self, self.gamespace.player_group, False)
+                   if self.sender not in self.gamespace.player_group else []))
         heroes.remove(self.sender) if self.sender in heroes else None
         if heroes:
             for sprite in heroes:
@@ -1332,15 +1383,57 @@ class Bullet(GameObject):
 class StdItems:
     class WeaponStaff(Weapon):
         def __init__(self, gamespace, x, y):
-            super().__init__(gamespace, x, y, "Посох", damage=50, speed_attack=10, bullet=StdBullets.BlueBall)
+            super().__init__(gamespace, x, y, "Посох", damage=150, speed_attack=0.5, bullet=StdBullets.BlueBall,
+                             energy_requirement=25)
             self.set_image(gamespace.game.load_image("weapon\\staff.png", -1))
+
+    class WeaponShuriken(Weapon):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y, "Сюрикены", damage=8, speed_attack=25, bullet=StdBullets.Shuriken,
+                             energy_requirement=2)
+            self.set_image(gamespace.game.load_image("weapon\\shuriken.png", -1))
+
+    class WeaponPistol(Weapon):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y, "Пистолет", damage=35, speed_attack=3, bullet=StdBullets.RedBall,
+                             energy_requirement=5)
+            self.set_image(gamespace.game.load_image("weapon\\pistol.png", -1))
+
+    all_weapons = [WeaponPistol, WeaponShuriken, WeaponStaff]
+
+    class HeavyArmor(Item):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y)
+            self.type_item = "armor"
+            self.armor = 600
+            self.sprint_speed = -2.5
+            self.set_image(gamespace.game.load_image("armor\\heavy armor.png", -1))
+
+    class MediumArmor(Item):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y)
+            self.type_item = "armor"
+            self.armor = 350
+            self.sprint_speed = -1.5
+            self.set_image(gamespace.game.load_image("armor\\medium armor.png", -1))
+
+    class LightArmor(Item):
+        def __init__(self, gamespace, x, y):
+            super().__init__(gamespace, x, y)
+            self.type_item = "armor"
+            self.armor = 100
+            self.sprint_speed = 0.5
+            self.set_image(gamespace.game.load_image("armor\\light armor.png", -1))
+
+    all_armors = [HeavyArmor, MediumArmor, LightArmor]
+    all_items = all_weapons + all_armors
 
 
 class StdBullets:
     class BlueBall(Bullet):
         def __init__(self, gamespace, sender, pos_finish, damage):
             super().__init__(gamespace, sender, pos_finish, damage, 3)
-            default_image = pygame.Surface(size=[gamespace.size_cell // 8] * 2)
+            default_image = pygame.Surface(size=[gamespace.size_cell // 4] * 2)
             default_image.fill(pygame.color.Color("red"))
             self.image = default_image
             self.rect = self.image.get_rect().move(
@@ -1349,6 +1442,32 @@ class StdBullets:
             self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
                                  sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
             self.set_image(gamespace.game.load_image("bullet\\blue ball.png", -1))
+
+    class Shuriken(Bullet):
+        def __init__(self, gamespace, sender, pos_finish, damage):
+            super().__init__(gamespace, sender, pos_finish, damage, 6)
+            default_image = pygame.Surface(size=[gamespace.size_cell // 6] * 2)
+            default_image.fill(pygame.color.Color("red"))
+            self.image = default_image
+            self.rect = self.image.get_rect().move(
+                sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+            self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                                 sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+            self.set_image(gamespace.game.load_image("bullet\\shuriken.png", -1))
+
+    class RedBall(Bullet):
+        def __init__(self, gamespace, sender, pos_finish, damage):
+            super().__init__(gamespace, sender, pos_finish, damage, 10)
+            default_image = pygame.Surface(size=[gamespace.size_cell // 8] * 2)
+            default_image.fill(pygame.color.Color("red"))
+            self.image = default_image
+            self.rect = self.image.get_rect().move(
+                sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+            self.set_coordinates(sender.true_x + gamespace.size_cell // 2 - default_image.get_width() // 2,
+                                 sender.true_y + gamespace.size_cell // 2 - default_image.get_height() // 2)
+            self.set_image(gamespace.game.load_image("bullet\\red ball.png", -1))
 
 
 if __name__ == '__main__':
