@@ -1355,8 +1355,11 @@ class Bullet(GameObject):
         self.damage = damage
         self.sender = sender
         self.k_speed = k_speed
-        self.angle = atan(((pos_finish[1] - self.image.get_width() / 2) - self.true_y) /
-                          ((pos_finish[0] - self.image.get_height() / 2) - self.true_x))
+        try:
+            self.angle = atan(((pos_finish[1] - self.image.get_width() / 2) - self.true_y) /
+                              ((pos_finish[0] - self.image.get_height() / 2) - self.true_x))
+        except ZeroDivisionError:
+            self.angle = atan(0)
         self.vx = cos(self.angle)
         self.vy = sin(self.angle)
         if pos_finish[0] - self.image.get_width() / 2 < self.true_x:
