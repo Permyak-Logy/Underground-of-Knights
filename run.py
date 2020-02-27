@@ -224,26 +224,26 @@ class GameExample:
                               show_background=False, number=11)
         label_shields.max_shields = 0
         # Полоска энергии
-        label_enegy = Punkt(text='Energy: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1] * 2),
-                            size=(size[0], size[1] // 2), color=(60, 60, 60), color_text=_Color('black'),
-                            show_background=False, number=12, bolden=False)
-        label_enegy.max_energy = 0
+        label_energy = Punkt(text='Energy: 000', pos=(int(self.width * 0.78), int(self.height * 0.8) + size[1] * 2),
+                             size=(size[0], size[1] // 2), color=(60, 60, 60), color_text=_Color('black'),
+                             show_background=False, number=12, bolden=False)
+        label_energy.max_energy = 0
         # Показатель брони
         label_armor = Punkt(text='Armor: 00000', pos=(int(self.width * 0.85), int(self.width * 0.05)), size=-1,
                             font=_SysFont('gabriola', int(self.height * 0.05)), bolden=False, show_background=False,
                             number=13, color_text=_Color('white'))
         # Показатель скорости бега
-        label_sprint_speed = Punkt(text='Sprint: 0000', font=_SysFont('gabriola', int(self.height * 0.05)),
+        label_sprint_speed = Punkt(text='Sprint: 0000', font=_SysFont('gabriola', int(self.height * 0.05)), size=-1,
                                    pos=(int(self.width * 0.85), int(self.width * 0.05 + label_armor.get_size()[1])),
                                    bolden=False, show_background=False, number=14, color_text=_Color('white'))
 
-        label_number_level = Punkt(text='Level 000', font=_SysFont('gabriola', int(self.height * 0.05)),
+        label_number_level = Punkt(text='Level 000', font=_SysFont('gabriola', int(self.height * 0.05)), size=-1,
                                    pos=(int(self.width * 0.4), int(self.width * 0.05)), bolden=False,
                                    show_background=False, number=15, color_text=_Color('white'))
         label_number_level.number_level = 0
 
         self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
-                                   label_armor, label_enegy, label_sprint_speed,
+                                   label_armor, label_energy, label_sprint_speed,
                                    label_second_weapon, label_health, label_shields,
                                    label_number_level)  # Добавление пунктов
 
@@ -731,11 +731,13 @@ class Punkt:
     Виджеты (похожи на PushButton и Label из библиотеки PyQt5)
     '''
 
-    def __init__(self, text=None, pos=(0, 0), size=-1, font=None, color=(100, 100, 100), show_background=True,
+    def __init__(self, size, text=None, pos=(0, 0), font=None, color=(100, 100, 100), show_background=True,
                  color_active=(0, 255, 255), color_text=(0, 0, 0), func=None, number=0, bolden=True):
         '''Инициализация'''
         print(f'\t\tinit punct text: "{text}"", number: "{number}" : ', end='') if DEBUG_INFO else None
-
+        self.text = self.font = self.func = self.color = self.color_text = self.color_active = self.bolden = None
+        self.number = self.pos = self.x = self.y = self.width = self.height = self.size = self.image = None
+        self.isshowed = None
         self.set_text(text)  # Установка текста
         self.set_font(font)  # Установка шрифта
         self.connect(func)  # Подключение функции
@@ -823,7 +825,7 @@ class Punkt:
         else:  # Преобразование в прозрачный фон
             surface.fill((1, 0, 0))
             surface.set_colorkey((1, 0, 0))
-            surface.convert_alpha()
+            # surface.convert_alpha()
 
         if self.image is not None:  # наложение картинки если есть она
             surface.blit(self.image, (0, 0))
@@ -1283,12 +1285,13 @@ class Item(GameObject):
         self.rect = self.image.get_rect().move(self.true_x, self.true_y)
         self.add(gamespace.items_group)
 
-        self.icon_image = self.image.copy()
         self.type_item = "none"
         self.armor = 0
         self.energy_efficiency = 0
         self.sprint_speed = 0
         self.is_taken = False
+
+        self.icon_image = self.image.copy()
 
     def set_image(self, image):
         super().set_image(image)
@@ -1298,7 +1301,7 @@ class Item(GameObject):
         self.is_taken = True
         image = pygame.Surface(size=(10, 10))
         image.set_colorkey(image.get_at((0, 0)))
-        self.image = image.convert_alpha()
+        self.image = image
 
     def put(self, x, y):
         self.is_taken = False
@@ -1307,7 +1310,7 @@ class Item(GameObject):
 
 
 class Weapon(Item):
-    def __init__(self, gamespace, x, y, name, damage=1, speed_attack=1, weapon_type='melee', weapon_range=1,
+    def __init__(self, gamespace, x, y, name, damage=1, speed_attack=1.0, weapon_type='melee', weapon_range=1,
                  weapon_rapidity=2, bullet=None, energy_requirement=1):
         super().__init__(gamespace, x, y)
         self.type_item = "weapon"
@@ -1429,6 +1432,7 @@ class StdItems:
             self.set_image(gamespace.game.load_image("armor\\light armor.png", -1))
 
     all_armors = [HeavyArmor, MediumArmor, LightArmor]
+
     all_items = all_weapons + all_armors
 
 
