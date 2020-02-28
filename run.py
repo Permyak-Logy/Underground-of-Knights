@@ -64,6 +64,8 @@ class GameExample:
             # Отрисовка экрана
             self.main_screen.fill(pygame.Color('black'))
             if self.mode == MODE_MENU:
+                # Обмновление меню
+                self.menu.update()
                 # Рисование меню
                 self.menu.render(self.main_screen)
             if self.mode == MODE_GAME:
@@ -76,7 +78,8 @@ class GameExample:
                 self.main_screen.blit(self.image_arrow, (pygame.mouse.get_pos()))
 
             self.main_screen.blit(pygame.font.Font(None, 20).render(
-                f'fps: {round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME is not None else "---"}', 0,
+                f'''fps: {(round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME else
+                           round(self.menu.clock.get_fps()))}''', 0,
                 (255, 255, 255)), (0, 0))
 
             # Обновление дисплея
@@ -178,6 +181,15 @@ class GameExample:
         btn_exit = Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
                          show_background=False, color_text=_Color('red'), number=4,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
+        # Анимация мерцания света
+        animate_light = AnimatedPunkt.Blinking(int(self.width * 0.575), int(self.height * 0.485),
+                                               (int(self.height * 0.2), int(self.height * 0.2)),
+                                               self.menu.animated_punkts_group)
+
+        pygame.draw.circle(animate_light.image, _Color("yellow"),
+                           (animate_light.rect.width // 2, animate_light.rect.height // 2),
+                           animate_light.rect.width // 2)
+        animate_light.image.set_colorkey(animate_light.image.get_at((0, 0)))
 
         # =====================================================# ВОТ ЭТО ОТРЕДАКТИТЬ И ВСЁ!!!
         self.text_guide = """\n\n
@@ -335,6 +347,7 @@ class GameExample:
         self.game_space.new_game()  # Начало новой игры в game_space
         self.unset_pause()  # Убирание паузы
         self.music.pause()  # Остановка музыки
+        self.game_space.clock.tick()
 
     def open_menu(self):
         '''Открывает меню'''
@@ -343,6 +356,7 @@ class GameExample:
         self.set_pause()  # Установка паузы
         self.music.load('data\music\main_menu.mp3')
         self.music.play(-1)
+        self.menu.clock.tick()
 
     def open_settings(self):
         '''Открывает настройки'''
@@ -470,6 +484,8 @@ class Menu:
         background = self.game.load_image('background menu.png')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
+        self.animated_punkts_group = pygame.sprite.Group()
+        self.clock = pygame.time.Clock()
 
     def check_on_press_punkts(self, pos):
         '''Проверяет пункты на нажатие'''  # Не могу придумать...
@@ -478,12 +494,17 @@ class Menu:
                 return True
         return False
 
+    def update(self):
+        tick = self.clock.tick()
+        self.animated_punkts_group.update(tick)
+
     def render(self, screen):
         '''Рисует меню'''
         screen.blit(self.image_background, (0, 0))  # Накладывет фон
         for punkt in self.punkts:
             # Рисует все пункты меню
             punkt.draw(screen, ispressed=punkt.get_focused(pygame.mouse.get_pos()))
+        self.animated_punkts_group.draw(screen)
 
     def add_punkt(self, punkt):
         '''Добавление 1 пункта'''
@@ -523,7 +544,7 @@ class GameSpace:
         self.bullets_group = pygame.sprite.Group()
 
         self.player = None  # Создание игрока
-        self.clock = None  # Создание игрового времени
+        self.clock = pygame.time.Clock()  # Создание игрового времени
 
         self.camera = Camera(self)
 
@@ -584,7 +605,6 @@ class GameSpace:
         self.update_interface()  # Обновление интерфейса
 
         self.generate_level(self.get_next_level())
-        self.clock = pygame.time.Clock()
 
     def get_next_level(self):
         '''Получение следующего уровня'''
@@ -723,12 +743,6 @@ class GameSpace:
         for elem in self.player.things.values():
             if elem is not None:
                 elem.add(self.items_group)
-        # StdItems.WeaponStaff(self, 5, 4)
-        # StdItems.WeaponShuriken(self, 6, 4)
-        # StdItems.WeaponPistol(self, 7, 4)
-        # StdItems.HeavyArmor(self, 5, 5)
-        # StdItems.MediumArmor(self, 6, 5)
-        # StdItems.LightArmor(self, 7, 5)
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -772,6 +786,68 @@ class GameSpace:
         for punkt in self.punkts:
             if punkt.number == number:
                 return punkt
+
+
+class AnimatedPunkt:
+    class AnimateBase(pygame.sprite.Sprite):
+        def __init__(self, x, y, size, *groups):
+            super().__init__(*groups)
+            self.image = pygame.Surface(size=size)
+            self.rect = self.image.get_rect().move(x, y)
+
+    class Blinking(AnimateBase):
+        def __init__(self, x, y, size, *groups, var=1):
+            super().__init__(x, y, size, *groups)
+            self.min_alpha = 10
+            self.max_alpha = 30
+            self.cur_alpha = (self.max_alpha - self.min_alpha) / 2 + self.min_alpha
+            self.v = 20
+            self.var = var
+            self.k = 1
+
+        def update(self, *args, **kwargs):
+            if self.var == 1:
+                self.cur_alpha += args[0] * self.v / 1000 * self.k
+                if not self.min_alpha <= self.cur_alpha <= self.max_alpha:
+                    self.k = -self.k
+                    if self.k == 1:
+                        self.cur_alpha = self.min_alpha
+                    else:
+                        self.cur_alpha = self.max_alpha
+            if self.var == 2:
+                self.k = (-1) ** randint(2, 3)
+                self.cur_alpha += args[0] * self.v / 1000 * self.k
+                if not self.min_alpha <= self.cur_alpha <= self.max_alpha:
+                    self.k = -self.k
+                    if self.k == 1:
+                        self.cur_alpha = self.min_alpha
+                    else:
+                        self.cur_alpha = self.max_alpha
+            if self.cur_alpha:
+                self.image.set_alpha(int(self.cur_alpha))
+
+    class Frames(AnimateBase):
+        def __init__(self, x, y, size, sheet, column, rows, *groups):
+            super().__init__(x, y, size, *groups)
+            self.cur_frame_index = 0
+            self.frames_run = self.cut_sheet(sheet, column, rows)
+
+        def cut_sheet(self, sheet, columns, rows):
+            '''Разделение доски анимации и возвращение списка кадров'''
+            listen = []
+            self.rect = pygame.Rect(self.rect.x, self.rect.y, sheet.get_width() // columns,
+                                    sheet.get_height() // rows)
+            for j in range(rows):
+                for i in range(columns):
+                    frame_location = (self.rect.w * i, self.rect.h * j)
+                    listen.append(sheet.subsurface(pygame.Rect(
+                        frame_location, self.rect.size)))
+            return listen
+
+        def update(self, *args, **kwargs):
+            self.cur_frame_run = (self.cur_frame_run + 5.7 * args[0] / 1000 * args[3] *
+                                  len(self.frames_run) / 10) % len(self.frames_run)
+            self.image = self.frames_run[int(self.cur_frame_run)]
 
 
 class Punkt:
