@@ -46,7 +46,7 @@ class GameExample:
         self.load_game_space()
 
         # Установка титульного имени окна
-        pygame.display.set_caption('Knights')
+        pygame.display.set_caption('Underground of Knights')
 
         # Установка иконки
         pygame.display.set_icon(self.load_image('icon.png'))
@@ -147,8 +147,8 @@ class GameExample:
         self.menu = Menu(self)  # Создание меню
 
         # Надпись названия игры
-        label_title = Punkt(text='Soul Knight Demo', pos=(int(self.width * 0.5), int(self.height * 0.45)), size=-1,
-                            show_background=False, color_text=_Color('white'), number=0,
+        label_title = Punkt(text='Underground of Knights', pos=(int(self.width * 0.4), int(self.height * 0.15)),
+                            size=-1, show_background=False, color_text=_Color('white'), number=0,
                             font=_SysFont('gabriola', self.height // 10), bolden=False)
         # Кнопка "Играть"
         btn_play = Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
@@ -271,10 +271,14 @@ class GameExample:
                                    show_background=False, number=15, color_text=_Color('white'))
         label_number_level.number_level = 0
 
+        label_message = Punkt(text='None', font=_SysFont('gabriola', int(self.height * 0.4)),
+                               pos=(0, 0), bolden=False, size=self.size, show_background=False, number=16,
+                               color_text=_Color('white'), func=self.open_menu)
+
         self.game_space.add_punkts(btn_exit, btn_pause, label_pause, label_cur_weapon,
                                    label_armor, label_energy, label_sprint_speed,
                                    label_second_weapon, label_health, label_shields,
-                                   label_number_level)  # Добавление пунктов
+                                   label_number_level, label_message)  # Добавление пунктов
 
     def mouse_press_event(self, event):
         '''События мыши'''
@@ -505,6 +509,7 @@ class GameSpace:
         self.level_x = self.level_y = 0
         self.pause_status = False
         self.size_cell = int(self.game.height * 0.2)
+        self.is_finished = False
 
         self.all_sprites = pygame.sprite.Group()  # Все спрайты
         self.player_group = pygame.sprite.Group()  # Спрайт игрока
@@ -573,6 +578,7 @@ class GameSpace:
         energy_punkt.max_energy = self.player.energy
 
         self.get_punkt(15).number_level = 0  # Номер уровня
+        self.get_punkt(16).hide()
 
         self.update_interface()  # Обновление интерфейса
 
@@ -586,10 +592,16 @@ class GameSpace:
         except IndexError:
             return None
 
-    def finish_game(self, message=None):
+    def finish_game(self, message=None, color=None):
         '''Заканчивает игру'''
         print(f'{self.__class__}.finish_game()') if DEBUG_INFO else None
-        self.game.open_menu()
+        self.pause_status = True
+        label_message = self.get_punkt(16)
+        label_message.show()
+        if message:
+            label_message.set_text(message)
+        if color:
+            label_message.set_color(color_text=color)
 
     def update_interface(self):
         '''обновление боевого интерфейса'''
@@ -668,6 +680,9 @@ class GameSpace:
         tick = self.clock.tick()  # Получения момента времени
         if self.pause_status is True:
             return
+        if self.is_finished is True:
+            return
+
         self.player_group.update(tick)  # Обновление персонажа
         self.enemies_group.update(tick)
         self.items_group.update(tick)
@@ -683,7 +698,7 @@ class GameSpace:
     def generate_level(self, level):
         print('\tStart generate level') if DEBUG_INFO else None
         if level is None:
-            return self.finish_game('Уровни кончились!!!')
+            return self.finish_game(message='You win', color=pygame.color.Color('green'))
         self.game.main_screen.fill((0, 0, 0))
         self.game.main_screen.blit(self.game.menu.image_background, (0, 0))
         pygame.display.flip()
@@ -716,27 +731,26 @@ class GameSpace:
     def load_levels(self, directory):
         '''Загрузка пакета уровней'''
         print('GameSpace.load_levels()') if DEBUG_INFO else None
-        try:
-            print(f'\tStart load levels {directory}') if DEBUG_INFO else None
-            self.levels.clear()
-            for i in range(1, 10 ** 10):
-                print(f'\t\t--- connect level lvl_{i} ', end='') if DEBUG_INFO else None
-                filename = f"data/levels/{directory}/lvl_{i}.txt"
-                # читаем уровень, убирая символы перевода строки
-                with open(filename, 'r') as mapFile:
-                    level_map = [line.strip().split() for line in mapFile]
+        print(f'\tStart load levels {directory}') if DEBUG_INFO else None
+        self.levels.clear()
+        for i in range(1, 10 ** 10):
+            print(f'\t\t--- connect level lvl_{i} ', end='') if DEBUG_INFO else None
+            filename = f"data/levels/{directory}/lvl_{i}.txt"
+            # читаем уровень, убирая символы перевода строки
+            if not os.access(filename, os.F_OK):
+                break
+            with open(filename, 'r') as mapFile:
+                level_map = [line.strip().split() for line in mapFile]
 
-                # и подсчитываем максимальную длину
-                max_width = max(map(len, level_map))
+            # и подсчитываем максимальную длину
+            max_width = max(map(len, level_map))
 
-                # дополняем каждую строку пустыми клетками ('.')
-                self.levels.append(list(map(lambda x: x + ['_'] * (max_width - len(x)), level_map)))
-                print('True') if DEBUG_INFO else None
-
-        except FileNotFoundError:
-            print('False') if DEBUG_INFO else None
-            print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
-            [print([print(row) for row in level]) for level in self.levels] if DEBUG_INFO else None
+            # дополняем каждую строку пустыми клетками ('.')
+            self.levels.append(list(map(lambda x: x + ['_'] * (max_width - len(x)), level_map)))
+            print('True') if DEBUG_INFO else None
+        print('False') if DEBUG_INFO else None
+        print(f'\tFinish load levels {directory}') if DEBUG_INFO else None
+        [print([print(row) for row in level]) for level in self.levels] if DEBUG_INFO else None
 
     def empty_sprites(self):
         print('GameSpace.empty_sprites()') if DEBUG_INFO else None
@@ -1180,13 +1194,16 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet_animation_run = pygame.transform.scale(sheet_animation_run, (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet_animation_run, 10, 1)
 
+        self.health = 10000
+        self._armor = 100000
+
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь
         move_kx = move_ky = 0  # Коэффициэты показывающие куда персонаж сходил
         if self.health <= 0:
             # Если здоровье падает до 0 и меньше то игра заканчивается
             self.kill()
-            self.gamespace.finish_game(message='Закончились жизни')
+            self.gamespace.finish_game(message='You lose', color=pygame.color.Color('red'))
             return
         if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
             # Движение вправо если нажата клавиша Right или D
@@ -1254,6 +1271,7 @@ class Enemy(BaseHero, AnimatedSpriteForHero):
         move_kx = move_ky = 0
         if self.attack_range[0] < self.get_distance(target) < self.attack_range[1]:
             self.attack(target)
+            target.half_damage(0.1)
             self.half_damage(1)
         elif not self.attack_range[1] > self.get_distance(target):
             if self.true_x < target.true_x:
