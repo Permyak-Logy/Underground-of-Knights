@@ -4,7 +4,6 @@ import sys
 from win32api import GetSystemMetrics
 from random import randint as rd
 from random import choice
-from settings_launcher import SettingsWindow, QApplication
 from random import randint
 from math import sin, cos, atan, degrees
 
@@ -22,15 +21,29 @@ class GameExample:
         '''Инициализация'''
         print('init Game') if DEBUG_INFO else None
         pygame.init()
+        # Загрузка данных настроек
+        self.data_settings = self.load_settings()
 
         # Создание переменной с функцианалом для музыки
         self.music = pygame.mixer.music
 
-        # Загрузка данных настроек и их обновление
-        # Они включают первичную установку режима (полноэкранный или оконный),
-        # размеров экрана, загрузку меню и игрового пространства,
-        # установка громкости звука
-        self.update_settings()
+        # Установка громкости музыки
+        self.music.set_volume(float(self.data_settings['volume']))
+
+        # Инициализация разрешения окна
+        self.size = self.width, self.height = tuple(map(int, self.data_settings['matrix'].split('x')))
+
+        # Центрирование окна
+        self.center()
+
+        # Инициализация режима экрана и главного кадра игры
+        self.set_mode_display(self.size, self.data_settings['fullscreen'] == 'true')
+
+        # Загрузка меню
+        self.load_menu()
+
+        # Загруска игрового пространства
+        self.load_game_space()
 
         # Установка титульного имени окна
         pygame.display.set_caption('Knights')
@@ -91,29 +104,6 @@ class GameExample:
         os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (int(pos_x), int(pos_y))
         os.environ['SDL_VIDEO_CENTERED'] = '0'
 
-    def update_settings(self):
-        print(f'{self.__class__}.update_settings()') if DEBUG_INFO else None
-        # Загрузка настроек
-        self.data_settings = self.load_settings()
-
-        # Установка громкости музыки
-        self.music.set_volume(self.data_settings['volume'])
-
-        # Инициализация разрешения окна
-        self.size = self.width, self.height = self.data_settings['matrix']
-
-        # Центрирование окна
-        self.center()
-
-        # Инициализация режима экрана и главного кадра игры
-        self.set_mode_display(self.size, self.data_settings['fullscreen'])
-
-        # Загрузка меню
-        self.load_menu()
-
-        # Загруска игрового пространства
-        self.load_game_space()
-
     @staticmethod
     def load_settings():
         result = {}
@@ -121,12 +111,7 @@ class GameExample:
             data = file.readlines()
         for elem in data:
             key, val = elem.split()
-            if key == 'matrix':
-                result[key] = tuple(map(int, val.split('x')))
-            elif key == 'fullscreen':
-                result[key] = val == 'true'
-            elif key == 'volume':
-                result[key] = float(val)
+            result[key] = val
         return result
 
     @staticmethod
@@ -169,10 +154,6 @@ class GameExample:
         btn_play = Punkt(text='Играть', pos=(int(self.width * 0.05), int(self.height * 0.8)), size=-1,
                          show_background=False, color_text=_Color('green'), number=1,
                          font=_SysFont('gabriola', self.height // 20), func=self.start_game)
-        # Кнопка "Настройки"
-        btn_settings = Punkt(text='Настройки', pos=(int(self.width * 0.3), int(self.height * 0.8)), size=-1,
-                             show_background=False, color_text=_Color('white'), number=2,
-                             font=_SysFont('gabriola', self.height // 20), func=self.open_settings)
         # Кнопка "Руководство"
         btn_guide = Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
                           show_background=False, color_text=_Color('white'), number=3,
@@ -363,21 +344,6 @@ class GameExample:
         self.music.play(-1)
         self.menu.clock.tick()
 
-    def open_settings(self):
-        '''Открывает настройки'''
-        print(f'{self.__class__}.open_settings()') if DEBUG_INFO else None
-        # os.startfile('settings launcher.exe')
-        # self.music.pause()
-        app = QApplication(sys.argv)
-        settings_window = SettingsWindow(self)
-        app.exec_()
-        for _ in pygame.event.get():
-            pass
-        if not pygame.display.get_active():
-            pygame.display.iconify()
-        self.update_settings()
-        # self.music.unpause()
-
     def open_guide(self):
         '''Открывает руководство'''
         print(f'{self.__class__}.open_guide()') if DEBUG_INFO else None
@@ -429,6 +395,7 @@ class GameExample:
         logo_DeusVult = pygame.transform.scale(logo_DeusVult,
                                                 (int(logo_DeusVult.get_width() * (self.width // 640) * 0.5),
                                                  int(logo_DeusVult.get_height() * (self.height // 360) * 0.5)))
+
         logo_PyGame = self.load_image('PyGame.png', colorkey=-1)
         logo_PyGame = pygame.transform.scale(logo_PyGame,
                                              (int(logo_PyGame.get_width() * (self.width // 640) * 0.27),
