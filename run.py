@@ -78,6 +78,7 @@ class GameExample:
             self.main_screen.blit(pygame.font.Font(None, 20).render(
                 f'fps: {round(self.game_space.clock.get_fps()) if self.mode == MODE_GAME is not None else "---"}', 0,
                 (255, 255, 255)), (0, 0))
+
             # Обновление дисплея
             pygame.display.flip()
 
@@ -360,14 +361,17 @@ class GameExample:
         logo_PyPLy = pygame.transform.scale(logo_PyPLy,
                                             (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
                                              int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
-        #
-        logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
-        logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
-                                                (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
-                                                 int(logo_Landrus13.get_height() * (self.height // 360) * 0.5)))
-
+#
+        logo_DeusVult = self.load_image('DeusVult.png', colorkey=-1)
+        logo_DeusVult = pygame.transform.scale(logo_DeusVult,
+                                                (int(logo_DeusVult.get_width() * (self.width // 640) * 0.5),
+                                                 int(logo_DeusVult.get_height() * (self.height // 360) * 0.5)))
+        logo_PyGame = self.load_image('PyGame.png', colorkey=-1)
+        logo_PyGame = pygame.transform.scale(logo_PyGame,
+                                             (int(logo_PyGame.get_width() * (self.width // 640) * 0.27),
+                                              int(logo_PyGame.get_height() * (self.height // 360) * 0.27)))
         clock = pygame.time.Clock()
-        for image in [logo_PyPLy, logo_Landrus13]:
+        for image in [logo_PyPLy, logo_DeusVult, logo_PyGame]:
             alpha = 0  # Начальный показатель alpha канала
             manifestation_rate = 100  # Скорость проявления исзображения в %/сек
             continuation_time = 1  # Сколько времени осталось показывать изображение после его полного отображения
@@ -419,7 +423,7 @@ class Menu:
 
     def __init__(self, game, punkts=None):
         self.game = game  # Подключение игры
-        background = self.game.load_image('background menu.jpg')  # Загрузка картинки фона
+        background = self.game.load_image('background menu.png')  # Загрузка картинки фона
         self.image_background = pygame.transform.scale(background, self.game.size)  # Преобразование фона
         self.punkts = punkts if punkts is not None else list()  # Занесение пунктов
 
@@ -512,7 +516,7 @@ class GameSpace:
         print(f'{self.__class__}.new_game()') if DEBUG_INFO else None
 
         self.levels.clear()
-        self.load_levels('test2')
+        self.load_levels('test')
         self.player = Player(self, 0, 0)
 
         # Подключение функций персонажа и его показателей к пунктам:
@@ -825,7 +829,6 @@ class Punkt:
         else:  # Преобразование в прозрачный фон
             surface.fill((1, 0, 0))
             surface.set_colorkey((1, 0, 0))
-            # surface.convert_alpha()
 
         if self.image is not None:  # наложение картинки если есть она
             surface.blit(self.image, (0, 0))
