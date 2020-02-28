@@ -80,6 +80,12 @@ class GameExample:
             # Обновление дисплея
             pygame.display.flip()
 
+    def center(self):
+        pos_x = GetSystemMetrics(0) / 2 - self.width / 2
+        pos_y = GetSystemMetrics(1) / 2 - self.height / 2
+        os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (int(pos_x), int(pos_y))
+        os.environ['SDL_VIDEO_CENTERED'] = '0'
+
     def update_settings(self):
         print(f'{self.__class__}.update_settings()') if DEBUG_INFO else None
         # Загрузка настроек
@@ -90,6 +96,9 @@ class GameExample:
 
         # Инициализация разрешения окна
         self.size = self.width, self.height = self.data_settings['matrix']
+
+        # Центрирование окна
+        self.center()
 
         # Инициализация режима экрана и главного кадра игры
         self.set_mode_display(self.size, self.data_settings['fullscreen'])
