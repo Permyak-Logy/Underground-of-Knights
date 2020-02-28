@@ -156,11 +156,11 @@ class GameExample:
                          font=_SysFont('gabriola', self.height // 20), func=self.start_game)
         # Кнопка "Руководство"
         btn_guide = Punkt(text='Руководство', pos=(int(self.width * 0.55), int(self.height * 0.8)), size=-1,
-                          show_background=False, color_text=_Color('white'), number=3,
+                          show_background=False, color_text=_Color('white'), number=2,
                           font=_SysFont('gabriola', self.height // 20), func=self.open_guide)
         # Кнопка "Выход"
         btn_exit = Punkt(text='Выйти', pos=(int(self.width * 0.8), int(self.height * 0.8)), size=-1,
-                         show_background=False, color_text=_Color('red'), number=4,
+                         show_background=False, color_text=_Color('red'), number=3,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
         # Анимация мерцания света
         animate_light = AnimatedPunkt.Blinking(int(self.width * 0.575), int(self.height * 0.485),
@@ -186,19 +186,19 @@ class GameExample:
         """  # ================================# В функциях там надо будет после отредактить
         # =====================================================# переменную "n"
 
-        btn_close_guid = Punkt(pos=(0, 0), size=self.size, show_background=False, number=5, func=self.close_guide)
+        btn_close_guid = Punkt(pos=(0, 0), size=self.size, show_background=False, number=4, func=self.close_guide)
         btn_close_guid.hide()
 
         list_lines_guid = []
         for i, elem in enumerate(self.text_guide.split("\n")):
             label = Punkt(text=elem, pos=(0, i * int(self.height * 0.04)), size=-1, show_background=False, bolden=False,
-                          color_text=_Color("white"), number=i + 6, font=_Font(None, int(self.height * 0.05)))
+                          color_text=_Color("white"), number=i + 5, font=_Font(None, int(self.height * 0.05)))
             # label.resize((self.width, label.height))
             label.hide()
             list_lines_guid.append(label)
 
         # Добавление пунктов в меню
-        self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit,
+        self.menu.add_punkts(label_title, btn_play, btn_guide, btn_exit,
                              btn_close_guid, *list_lines_guid)  # Добавление пунктов
 
     def load_game_space(self):
@@ -352,14 +352,14 @@ class GameExample:
         '''Открывает руководство'''
         print(f'{self.__class__}.open_guide()') if DEBUG_INFO else None
         n = len(self.text_guide.split("\n"))  # Количество строчек в тексте
-        [self.menu.get_punkt(i).hide() for i in range(5)]
-        [self.menu.get_punkt(i).show() for i in range(5, 6 + n)]
+        [self.menu.get_punkt(i).hide() for i in range(4)]
+        [self.menu.get_punkt(i).show() for i in range(4, 5 + n)]
 
     def close_guide(self):
         '''Закрывает руководство'''
         n = len(self.text_guide.split("\n"))  # Количество строчек в тексте
-        [self.menu.get_punkt(i).show() for i in range(5)]
-        [self.menu.get_punkt(i).hide() for i in range(5, 6 + n)]
+        [self.menu.get_punkt(i).show() for i in range(4)]
+        [self.menu.get_punkt(i).hide() for i in range(4, 5 + n)]
 
     def set_mode_display(self, size, bool_full_screen):
         '''Устанавливает полноэкранный и неполноэкранный режим'''
@@ -558,7 +558,7 @@ class GameSpace:
         print(f'{self.__class__}.new_game()') if DEBUG_INFO else None
 
         self.levels.clear()
-        self.load_levels('test')
+        self.load_levels(self.game.data_settings["package"])
         self.player = Player(self, 0, 0)
 
         # Подключение функций персонажа и его показателей к пунктам:
@@ -695,6 +695,8 @@ class GameSpace:
         for sprite in self.all_sprites:
             self.camera.apply(sprite)
 
+        print(self.player.things.get("armor").rect.x if self.player.things.get("armor") else None)
+
     def generate_level(self, level):
         print('\tStart generate level') if DEBUG_INFO else None
         if level is None:
@@ -726,7 +728,7 @@ class GameSpace:
                     self.player.add(self.player_group, self.all_sprites)
         for elem in self.player.things.values():
             if elem is not None:
-                elem.add(self.items_group)
+                elem.add(self.all_sprites, self.items_group)
         print('\tFinish generate level') if DEBUG_INFO else None
 
     def load_levels(self, directory):
@@ -1213,9 +1215,6 @@ class Player(BaseHero, AnimatedSpriteForHero):
         sheet_animation_run = self.gamespace.game.load_image('player\\animation run 10x1.png', -1)
         sheet_animation_run = pygame.transform.scale(sheet_animation_run, (space.size_cell * 10, space.size_cell * 1))
         self.init_animation(sheet_animation_run, 10, 1)
-
-        self.health = 10000
-        self._armor = 100000
 
     def update(self, *args):
         pressed_keys = pygame.key.get_pressed()  # Получения списка нажатых клавишь

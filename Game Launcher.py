@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtGui import QPixmap
 from SettingsForm import Ui_MainWindow
 from win32api import GetSystemMetrics
+import run
 
 
 class SettingsWindow(QMainWindow, Ui_MainWindow):
@@ -22,11 +23,7 @@ class SettingsWindow(QMainWindow, Ui_MainWindow):
 
     def play(self):
         self.hide()
-        if os.access("run.py", os.F_OK):
-            os.system("python run.py")
-        elif os.access("Underground of Knights.exe", os.F_OK):
-            os.startfile('Underground of Knights.exe')
-        self.show()
+        run.GameExample().mainloop()
 
     def open_main_menu(self):
         for row in range(self.gridLayoutSettings.rowCount()):
