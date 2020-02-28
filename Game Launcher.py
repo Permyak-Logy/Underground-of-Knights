@@ -10,6 +10,7 @@ import run
 class SettingsWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
         """Инициализация"""
+
         super().__init__()
         self.setupUi(self)  # Загрузка формы
 

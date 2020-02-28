@@ -8,7 +8,7 @@ from math import sin, cos, atan, copysign
 
 # Флаги режимов MODE_MENU, MODE_GAME, MODE_SETTINGS
 MODE_MENU, MODE_GAME = 0, 1
-DEBUG_INFO = False  # Флаг доп. информации в консоли
+DEBUG_INFO = True  # Флаг доп. информации в консоли
 
 
 class GameExample:
@@ -745,7 +745,7 @@ class GameSpace:
 
         if level is None:
             # Если уровня нет то игра заканчивается победой
-            return self.finish_game(message='You win', color=pygame.color.Color('green'))
+            return self.finish_game(message='Ты выйграл', color=pygame.color.Color('green'))
 
         # Установка фона меню на время загрузки
         self.game.main_screen.fill((0, 0, 0))
@@ -1345,7 +1345,7 @@ class Player(BaseHero, AnimatedSpriteForHero):
         if self.health <= 0:
             # Если здоровье падает до 0 и меньше то игра заканчивается
             self.kill()
-            self.gamespace.finish_game(message='You lose', color=pygame.color.Color('red'))
+            self.gamespace.finish_game(message='Ты проиграл', color=pygame.color.Color('red'))
             return
         if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
             # Движение вправо если нажата клавиша Right или D
