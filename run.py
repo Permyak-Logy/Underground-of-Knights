@@ -168,8 +168,34 @@ class GameExample:
                          show_background=False, color_text=_Color('red'), number=4,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
 
+        # =====================================================# ВОТ ЭТО ОТРЕДАКТИТЬ И ВСЁ!!!
+        self.text_guide = """\n\n
+                                    \bУправление\b      \n\n\n
+                            \bW\b - Движение вперёд      \n
+                            \bS\b - Движение назад       \n
+                            \bA\b - Движение вправо      \n
+                            \bD\b - Движение влево       \n
+                            \bZ\b - Выбросить броню      \n
+                            \bQ\b - Смена оружия         \n
+                            \bEsc\b - Выход в меню       \n
+                            \bP\b - Пауза                \n
+        """  # ================================# В функциях там надо будет после отредактить
+        # =====================================================# переменную "n"
+
+        btn_close_guid = Punkt(pos=(0, 0), size=self.size, show_background=False, number=5, func=self.close_guide)
+        btn_close_guid.hide()
+
+        list_lines_guid = []
+        for i, elem in enumerate(self.text_guide.split("\n")):
+            label = Punkt(text=elem, pos=(0, i * int(self.height * 0.04)), size=-1, show_background=False, bolden=False,
+                          color_text=_Color("white"), number=i + 6, font=_Font(None, int(self.height * 0.05)))
+            # label.resize((self.width, label.height))
+            label.hide()
+            list_lines_guid.append(label)
+
         # Добавление пунктов в меню
-        self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit)  # Добавление пунктов
+        self.menu.add_punkts(label_title, btn_play, btn_settings, btn_guide, btn_exit,
+                             btn_close_guid, *list_lines_guid)  # Добавление пунктов
 
     def load_game_space(self):
         '''Загрузка ирового пространства'''
@@ -320,6 +346,15 @@ class GameExample:
     def open_guide(self):
         '''Открывает руководство'''
         print(f'{self.__class__}.open_guide()') if DEBUG_INFO else None
+        n = len(self.text_guide.split("\n"))  # Количество строчек в тексте
+        [self.menu.get_punkt(i).hide() for i in range(5)]
+        [self.menu.get_punkt(i).show() for i in range(5, 6 + n)]
+
+    def close_guide(self):
+        '''Закрывает руководство'''
+        n = len(self.text_guide.split("\n"))  # Количество строчек в тексте
+        [self.menu.get_punkt(i).show() for i in range(5)]
+        [self.menu.get_punkt(i).hide() for i in range(5, 6 + n)]
 
     def set_mode_display(self, size, bool_full_screen):
         '''Устанавливает полноэкранный и неполноэкранный режим'''
@@ -354,7 +389,7 @@ class GameExample:
         logo_PyPLy = pygame.transform.scale(logo_PyPLy,
                                             (int(logo_PyPLy.get_width() * (self.width // 640) * 0.5),
                                              int(logo_PyPLy.get_height() * (self.height // 360) * 0.5)))
-#
+        #
         logo_Landrus13 = self.load_image('Landrus13.png', colorkey=-1)
         logo_Landrus13 = pygame.transform.scale(logo_Landrus13,
                                                 (int(logo_Landrus13.get_width() * (self.width // 640) * 0.5),
