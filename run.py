@@ -171,8 +171,8 @@ class GameExample:
                          show_background=False, color_text=_Color('red'), number=3,
                          font=_SysFont('gabriola', self.height // 20), func=self.terminate)
         # Анимация мерцания света
-        animate_light = AnimatedPunkt.Blinking(int(self.width * 0.575), int(self.height * 0.485),
-                                               (int(self.height * 0.2), int(self.height * 0.2)),
+        animate_light = AnimatedPunkt.Blinking(int(self.width * 0.5), int(self.height * 0.345),
+                                               (int(self.height * 0.45), int(self.height * 0.45)),
                                                self.menu.animated_punkts_group)
         # Анимированный свет фонаря
         pygame.draw.circle(animate_light.image, _Color("yellow"),
@@ -1004,8 +1004,8 @@ class AnimatedPunkt:
         def __init__(self, x, y, size, *groups, var=1):
             """Инициализация"""
             super().__init__(x, y, size, *groups)
-            self.min_alpha = 10
-            self.max_alpha = 30
+            self.min_alpha = 1
+            self.max_alpha = 20
             self.cur_alpha = (self.max_alpha - self.min_alpha) / 2 + self.min_alpha
             self.v = 20
             self.var = var
@@ -1701,7 +1701,7 @@ class StdItems:
     class WeaponShuriken(Weapon):
         # Сюрикен
         def __init__(self, gamespace, x, y):
-            super().__init__(gamespace, x, y, "Сюрикены", damage=8, speed_attack=25, bullet=StdBullets.Shuriken,
+            super().__init__(gamespace, x, y, "Сюрикены", damage=8, speed_attack=10, bullet=StdBullets.Shuriken,
                              energy_requirement=2)
             self.set_image(gamespace.game.load_image("weapon\\shuriken.png", -1))
 
@@ -1712,7 +1712,7 @@ class StdItems:
                              energy_requirement=5)
             self.set_image(gamespace.game.load_image("weapon\\pistol.png", -1))
 
-    all_weapons = [WeaponPistol, WeaponShuriken, WeaponStaff]  # Всё оружие
+    all_weapons = [WeaponStaff, WeaponShuriken, WeaponPistol]  # Всё оружие
 
     class HeavyArmor(Item):
         # Тяжёлая броня
