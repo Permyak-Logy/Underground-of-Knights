@@ -7,7 +7,7 @@ from win32api import GetSystemMetrics
 import run
 
 
-class SettingsWindow(QMainWindow, Ui_MainWindow):
+class GameLauncher(QMainWindow, Ui_MainWindow):
     def __init__(self):
         """Инициализация"""
 
@@ -114,6 +114,6 @@ class SettingsWindow(QMainWindow, Ui_MainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = SettingsWindow()
+    ex = GameLauncher()
     ex.show()
     app.exec_()

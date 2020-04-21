@@ -745,7 +745,7 @@ class GameSpace:
 
         if level is None:
             # Если уровня нет то игра заканчивается победой
-            return self.finish_game(message='Ты выйграл', color=pygame.color.Color('green'))
+            return self.finish_game(message='Ты выиграл', color=pygame.color.Color('green'))
 
         # Установка фона меню на время загрузки
         self.game.main_screen.fill((0, 0, 0))
